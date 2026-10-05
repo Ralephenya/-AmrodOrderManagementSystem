@@ -1,0 +1,13 @@
+<Project>
+  <!-- Central package management: every NuGet version lives here, projects reference packages without versions.
+       Pinned on purpose:
+         - MassTransit stays on 8.x (v9+ requires a commercial licence)
+         - Shouldly instead of FluentAssertions 8.x (commercial licence) -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Versions are added branch by branch as packages are introduced. -->
+  </ItemGroup>
+</Project>

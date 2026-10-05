@@ -1,0 +1,12 @@
+# Normalise line endings in the repo; check out with the platform default
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.{cmd,bat,ps1} text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.woff2 binary

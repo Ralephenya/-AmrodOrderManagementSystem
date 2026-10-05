@@ -1,0 +1,22 @@
+<Project>
+  <!-- Shared settings for every project in the repo. Target frameworks are set per project:
+       services target net8.0 (per the brief); the Aspire AppHost targets net10.0. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- CA1848/CA1873: LoggerMessage source-gen is overkill for this app size
+         CA2007: ConfigureAwait is irrelevant in ASP.NET Core (no SynchronizationContext)
+         CA1707: allow underscores in test method names (Method_State_Expected) -->
+    <NoWarn>$(NoWarn);CA1848;CA1873;CA2007;CA1707</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: don't demand XML docs on every public member -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+</Project>
