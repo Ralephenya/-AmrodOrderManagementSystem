@@ -27,6 +27,9 @@ public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFacto
         builder.UseSetting("Auth:Mock:SigningKey", "integration-tests-signing-key-0123456789abcdef");
         builder.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
 
+        // Every test shares one mock user, so the per-user write limit is raised; HttpHardeningTests lowers it again.
+        builder.UseSetting("RateLimiting:WritesPerMinute", "100000");
+
         // Test-only endpoints that exercise the cross-cutting behaviour (see Api/Probes).
         builder.ConfigureTestServices(services =>
         {
@@ -36,12 +39,15 @@ public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFacto
     }
 
     /// <summary>A client carrying a mock-Entra token with <paramref name="roles"/>, or anonymous when none are given.</summary>
-    public HttpClient CreateClientWithRoles(params string[] roles)
+    public HttpClient CreateClientWithRoles(params string[] roles) => CreateClientAs("Integration Test", roles);
+
+    /// <summary>A client for a specific user: different names get different <c>oid</c> claims.</summary>
+    public HttpClient CreateClientAs(string userName, params string[] roles)
     {
         var client = CreateClient();
         if (roles.Length > 0)
         {
-            var token = Services.GetRequiredService<MockTokenIssuer>().Issue("Integration Test", roles);
+            var token = Services.GetRequiredService<MockTokenIssuer>().Issue(userName, roles);
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 

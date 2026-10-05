@@ -1,0 +1,89 @@
+# Orders API: VS Code "REST Client" / JetBrains HTTP Client / Visual Studio .http
+# Start the stack first (Aspire AppHost or `dotnet run --project src/OrderManagement.Api`).
+
+@baseUrl = http://localhost:5050
+
+### 1. Development token (mock Entra)
+# @name token
+POST {{baseUrl}}/api/v1/dev/token
+Content-Type: application/json
+
+{ "name": "Steve", "roles": ["Orders.Write"] }
+
+###
+@accessToken = {{token.response.body.accessToken}}
+
+### 2. A Namibian customer (CMA: may order in NAD or ZAR)
+# @name customer
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "name": "Etosha Traders", "email": "orders@etosha-traders.example.na", "countryCode": "NA" }
+
+###
+@customerId = {{customer.response.body.id}}
+
+### 3. Create an order. The server computes totalAmount (3 × 19.99 + 2 × 85.50 = 230.97)
+# @name order
+POST {{baseUrl}}/api/v1/orders
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "currencyCode": "ZAR",
+  "lineItems": [
+    { "productSku": "PEN-001", "quantity": 3, "unitPrice": 19.99 },
+    { "productSku": "MUG-002", "quantity": 2, "unitPrice": 85.50 }
+  ]
+}
+
+###
+@orderId = {{order.response.body.id}}
+@etag = {{order.response.headers.ETag}}
+
+### 4. Get it (note the ETag response header)
+GET {{baseUrl}}/api/v1/orders/{{orderId}}
+Authorization: Bearer {{accessToken}}
+
+### 5. Conditional GET: 304 Not Modified while unchanged
+GET {{baseUrl}}/api/v1/orders/{{orderId}}
+Authorization: Bearer {{accessToken}}
+If-None-Match: {{etag}}
+
+### 6. Pay it, idempotently. Send this twice: the second response is replayed (Idempotent-Replayed: true)
+PUT {{baseUrl}}/api/v1/orders/{{orderId}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Idempotency-Key: 6f1c2b8e-pay-{{orderId}}
+
+{ "status": "Paid" }
+
+### 7. Same key, different change: 422
+PUT {{baseUrl}}/api/v1/orders/{{orderId}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Idempotency-Key: 6f1c2b8e-pay-{{orderId}}
+
+{ "status": "Cancelled" }
+
+### 8. Stale If-Match (the creation ETag): 412
+PUT {{baseUrl}}/api/v1/orders/{{orderId}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+If-Match: {{etag}}
+
+{ "status": "Cancelled" }
+
+### 9. List: this customer's Paid orders, highest total first (the brief's unversioned route works too)
+GET {{baseUrl}}/api/orders?customerId={{customerId}}&status=Paid&sort=-total&page=1&pageSize=20
+Authorization: Bearer {{accessToken}}
+
+### 10. Currency not allowed for the customer's country: 400 on currencyCode
+POST {{baseUrl}}/api/v1/orders
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "customerId": "{{customerId}}", "currencyCode": "BWP", "lineItems": [ { "productSku": "PEN-001", "quantity": 1, "unitPrice": 10 } ] }

@@ -24,7 +24,7 @@ internal static class ErrorOrProblems
         else
         {
             var first = errors.Count > 0 ? errors[0] : Error.Unexpected();
-            var status = StatusFor(first.Type);
+            var status = StatusFor(first);
             var entry = ProblemCatalog.For(status);
             problem = new ProblemDetails
             {
@@ -52,6 +52,13 @@ internal static class ErrorOrProblems
         errors
             .GroupBy(FieldFor, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.Select(e => e.Description).Distinct().ToArray(), StringComparer.Ordinal);
+
+    /// <summary>
+    /// Custom errors (<c>Error.Custom(412, …)</c>) carry their HTTP status as the numeric type; the built-in types
+    /// (0–6) map below.
+    /// </summary>
+    internal static int StatusFor(Error error) =>
+        error.NumericType is >= 400 and < 600 ? error.NumericType : StatusFor(error.Type);
 
     internal static int StatusFor(ErrorType type) => type switch
     {

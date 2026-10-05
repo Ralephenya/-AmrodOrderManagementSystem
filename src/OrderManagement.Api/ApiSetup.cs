@@ -72,6 +72,7 @@ internal static class ApiSetup
 
         // Application services: explicit registrations, one line per service, no assembly scanning magic.
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IOrderService, OrderService>();
 
         services.AddApiAuth(config, builder.Environment);
         services.AddApiCors(config);
@@ -156,7 +157,7 @@ internal static class ApiSetup
             .WithMethods(HttpMethods.Get, HttpMethods.Post, HttpMethods.Put)
             .WithHeaders("Authorization", "Content-Type", "Accept", "If-None-Match", "If-Match",
                 ApiHeaders.IdempotencyKey, ApiHeaders.CorrelationId)
-            .WithExposedHeaders("ETag", "Location", ApiHeaders.CorrelationId, ApiHeaders.ApiSupportedVersions)
+            .WithExposedHeaders("ETag", "Location", "Idempotent-Replayed", ApiHeaders.CorrelationId, ApiHeaders.ApiSupportedVersions)
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10))));
     }
 

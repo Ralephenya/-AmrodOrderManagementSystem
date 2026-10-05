@@ -11,6 +11,7 @@ The schema is owned by EF Core code-first migrations in
 | `InitialCreate` | Customers, Orders, OrderLineItems; FKs (Restrict / Cascade), check constraints, `IX_Orders_CustomerId_Status_CreatedAt` (INCLUDE TotalAmount, CurrencyCode) | create |
 | `AddOrderRowVersion` | `Orders.RowVersion rowversion` for optimistic concurrency | additive |
 | `AddOrderAllocatedAt` | `Orders.AllocatedAt datetime2 NULL`, set by the worker | additive, optional |
+| `AddIdempotencyKeys` | `IdempotencyKeys` (PK ClientId + Key, request hash, stored outcome, `IX_IdempotencyKeys_ExpiresAt`) | additive, new table |
 
 ## Commands
 

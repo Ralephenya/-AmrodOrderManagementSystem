@@ -175,3 +175,46 @@ GO
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005183849_AddIdempotencyKeys'
+)
+BEGIN
+    CREATE TABLE [IdempotencyKeys] (
+        [ClientId] varchar(64) NOT NULL,
+        [Key] varchar(128) NOT NULL,
+        [RequestHash] char(64) NOT NULL,
+        [Outcome] varchar(16) NOT NULL,
+        [Payload] nvarchar(max) NOT NULL,
+        [CreatedAt] datetime2 NOT NULL,
+        [ExpiresAt] datetime2 NOT NULL,
+        CONSTRAINT [PK_IdempotencyKeys] PRIMARY KEY ([ClientId], [Key])
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005183849_AddIdempotencyKeys'
+)
+BEGIN
+    CREATE INDEX [IX_IdempotencyKeys_ExpiresAt] ON [IdempotencyKeys] ([ExpiresAt]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005183849_AddIdempotencyKeys'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261005183849_AddIdempotencyKeys', N'8.0.31');
+END;
+GO
+
+COMMIT;
+GO
+

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Domain.Customers;
 using OrderManagement.Domain.Orders;
+using OrderManagement.Infrastructure.Idempotency;
 
 namespace OrderManagement.Infrastructure.Persistence;
 
@@ -9,6 +10,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Customer> Customers => Set<Customer>();
 
     public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<IdempotencyRecord> IdempotencyKeys => Set<IdempotencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
