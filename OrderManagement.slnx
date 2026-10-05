@@ -9,6 +9,7 @@
     <Project Path="src/OrderManagement.Worker/OrderManagement.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OrderManagement.IntegrationTests/OrderManagement.IntegrationTests.csproj" />
     <Project Path="tests/OrderManagement.UnitTests/OrderManagement.UnitTests.csproj" />
   </Folder>
 </Solution>
