@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <UserSecretsId>dotnet-OrderManagement.Worker-27dd4052-d896-4a38-8c3b-54b606bace38</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OrderManagement.Infrastructure\OrderManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\OrderManagement.ServiceDefaults\OrderManagement.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>
