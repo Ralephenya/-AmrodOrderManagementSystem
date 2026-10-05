@@ -15,6 +15,11 @@ public static class CustomerErrors
         description: "Please enter the customer's email address.",
         metadata: ErrorMetadata.ForField("email"));
 
+    public static Error EmailAlreadyExists(string email) => Error.Conflict(
+        code: "Customer.EmailAlreadyExists",
+        description: $"A customer with the email address {email} already exists.",
+        metadata: ErrorMetadata.ForField("email"));
+
     public static Error NotFound(Guid id) => Error.NotFound(
         code: "Customer.NotFound",
         description: $"We couldn't find a customer with ID {id}.");

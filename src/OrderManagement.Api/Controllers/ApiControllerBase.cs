@@ -1,3 +1,5 @@
+using System.Globalization;
+using Asp.Versioning;
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Api.Common.Errors;
@@ -15,6 +17,13 @@ namespace OrderManagement.Api.Controllers;
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")]
 public abstract class ApiControllerBase : ControllerBase
 {
+    /// <summary>
+    /// The requested API version in URL form (<c>1</c> for v1), for building <c>Location</c> headers that
+    /// point back at the same version the client called.
+    /// </summary>
+    protected string RouteVersion =>
+        (HttpContext.GetRequestedApiVersion() ?? Common.ApiVersions.Default).ToString("VVV", CultureInfo.InvariantCulture);
+
     /// <summary>Returns the ProblemDetails response for domain errors (see <see cref="ErrorOrProblems"/>).</summary>
     protected IActionResult Problem(IReadOnlyList<Error> errors)
     {

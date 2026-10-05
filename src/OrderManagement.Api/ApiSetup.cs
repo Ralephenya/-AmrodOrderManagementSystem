@@ -10,6 +10,8 @@ using OrderManagement.Api.Common.Errors;
 using OrderManagement.Api.Common.Http;
 using OrderManagement.Api.Common.Validation;
 using OrderManagement.Api.OpenApi;
+using OrderManagement.Api.Services;
+using OrderManagement.Api.Services.Interfaces;
 using Scalar.AspNetCore;
 
 namespace OrderManagement.Api;
@@ -67,6 +69,9 @@ internal static class ApiSetup
 
         services.AddSwaggerGen();
         services.ConfigureOptions<ConfigureSwaggerOptions>();
+
+        // Application services: explicit registrations, one line per service, no assembly scanning magic.
+        services.AddScoped<ICustomerService, CustomerService>();
 
         services.AddApiAuth(config, builder.Environment);
         services.AddApiCors(config);

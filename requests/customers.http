@@ -1,0 +1,51 @@
+# Customers API: VS Code "REST Client" / JetBrains HTTP Client / Visual Studio .http
+# Start the stack first (Aspire AppHost or `dotnet run --project src/OrderManagement.Api`).
+
+@baseUrl = http://localhost:5050
+
+### 1. Get a development token (mock Entra; Development only)
+# @name token
+POST {{baseUrl}}/api/v1/dev/token
+Content-Type: application/json
+
+{ "name": "Steve", "roles": ["Orders.Write"] }
+
+###
+@accessToken = {{token.response.body.accessToken}}
+
+### 2. Create a customer (201 + Location)
+# @name createCustomer
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "name": "Lerato Mokoena", "email": "lerato.mokoena@example.co.ls", "countryCode": "LS" }
+
+###
+@customerId = {{createCustomer.response.body.id}}
+
+### 3. Get it back
+GET {{baseUrl}}/api/v1/customers/{{customerId}}
+Authorization: Bearer {{accessToken}}
+
+### 4. Search (name or email prefix), paged and sorted (the brief's unversioned route works too)
+GET {{baseUrl}}/api/customers?search=ler&page=1&pageSize=20&sort=-createdAt
+Authorization: Bearer {{accessToken}}
+
+### 5. Validation errors: 400 with one message per field
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "name": "", "email": "not-an-email", "countryCode": "KE" }
+
+### 6. Duplicate email (case-insensitive): 409
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "name": "Someone Else", "email": "LERATO.MOKOENA@example.co.ls", "countryCode": "ZA" }
+
+### 7. Page size above 100: 400
+GET {{baseUrl}}/api/v1/customers?pageSize=500
+Authorization: Bearer {{accessToken}}

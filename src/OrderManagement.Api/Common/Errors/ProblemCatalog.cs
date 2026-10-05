@@ -34,6 +34,28 @@ internal static class ProblemCatalog
         [503] = new("service_unavailable", "The service is temporarily unavailable", "Please try again in a moment."),
     };
 
+    // RFC 9110 section for each status, matching the links ASP.NET Core puts on its own ProblemDetails.
+    private static readonly Dictionary<int, string> TypeByStatus = new()
+    {
+        [400] = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        [401] = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+        [403] = "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+        [404] = "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+        [405] = "https://tools.ietf.org/html/rfc9110#section-15.5.6",
+        [409] = "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+        [413] = "https://tools.ietf.org/html/rfc9110#section-15.5.14",
+        [415] = "https://tools.ietf.org/html/rfc9110#section-15.5.16",
+        [422] = "https://tools.ietf.org/html/rfc9110#section-15.5.21",
+        [428] = "https://tools.ietf.org/html/rfc6585#section-3",
+        [429] = "https://tools.ietf.org/html/rfc6585#section-4",
+        [500] = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+        [503] = "https://tools.ietf.org/html/rfc9110#section-15.6.4",
+    };
+
+    /// <summary>The RFC section describing <paramref name="status"/>, used as ProblemDetails <c>type</c> when none is set.</summary>
+    public static string TypeFor(int status) =>
+        TypeByStatus.TryGetValue(status, out var type) ? type : "about:blank";
+
     public static Entry For(int status) =>
         ByStatus.TryGetValue(status, out var entry)
             ? entry
