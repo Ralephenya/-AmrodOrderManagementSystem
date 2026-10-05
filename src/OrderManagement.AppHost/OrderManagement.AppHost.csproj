@@ -1,0 +1,17 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+
+  <!-- The AppHost is dev-time orchestration only, so it runs on .NET 10 (required by Aspire 13).
+       Every service it launches targets net8.0, per the brief. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>3ad689ba-7cd8-4377-b59c-daddd1a48dfa</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OrderManagement.Api\OrderManagement.Api.csproj" />
+    <ProjectReference Include="..\OrderManagement.Worker\OrderManagement.Worker.csproj" />
+  </ItemGroup>
+
+</Project>

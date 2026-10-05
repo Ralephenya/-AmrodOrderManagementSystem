@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OrderManagement.Infrastructure\OrderManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\OrderManagement.ServiceDefaults\OrderManagement.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>
