@@ -1,12 +1,20 @@
+using System.Net.Http.Headers;
+using FluentValidation;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using OrderManagement.Api.Auth;
 using OrderManagement.Infrastructure;
+using OrderManagement.IntegrationTests.Api.Probes;
 
 namespace OrderManagement.IntegrationTests.Fixtures;
 
-/// <summary>Hosts the real API in memory against the test database.</summary>
+/// <summary>Hosts the real API in memory against the test database, with mock Entra auth.</summary>
 public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFactory<Program>
 {
+    public const string AllowedOrigin = "http://localhost:5173";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -14,5 +22,29 @@ public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFacto
 
         // The fixture already applied migrations; the app must not try again.
         builder.UseSetting("Database:ApplyMigrationsOnStartup", "false");
+
+        builder.UseSetting("Auth:Mode", "Mock");
+        builder.UseSetting("Auth:Mock:SigningKey", "integration-tests-signing-key-0123456789abcdef");
+        builder.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
+
+        // Test-only endpoints that exercise the cross-cutting behaviour (see Api/Probes).
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddControllers().AddApplicationPart(typeof(ProbesController).Assembly);
+            services.AddValidatorsFromAssemblyContaining<ProbesController>(ServiceLifetime.Singleton);
+        });
+    }
+
+    /// <summary>A client carrying a mock-Entra token with <paramref name="roles"/>, or anonymous when none are given.</summary>
+    public HttpClient CreateClientWithRoles(params string[] roles)
+    {
+        var client = CreateClient();
+        if (roles.Length > 0)
+        {
+            var token = Services.GetRequiredService<MockTokenIssuer>().Issue("Integration Test", roles);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return client;
     }
 }

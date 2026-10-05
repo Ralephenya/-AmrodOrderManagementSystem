@@ -11,8 +11,9 @@
     <AnalysisMode>Recommended</AnalysisMode>
     <!-- CA1848/CA1873: LoggerMessage source-gen is overkill for this app size
          CA2007: ConfigureAwait is irrelevant in ASP.NET Core (no SynchronizationContext)
-         CA1707: allow underscores in test method names (Method_State_Expected) -->
-    <NoWarn>$(NoWarn);CA1848;CA1873;CA2007;CA1707</NoWarn>
+         CA1707: allow underscores in test method names (Method_State_Expected)
+         CA1859: prefer concrete types; it fights deliberate use of IConfiguration/IServiceCollection abstractions -->
+    <NoWarn>$(NoWarn);CA1848;CA1873;CA2007;CA1707;CA1859</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: don't demand XML docs on every public member -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>

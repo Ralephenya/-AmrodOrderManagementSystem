@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- Test-only relaxations. Production code keeps the full rule set.
+       CA1861: inline array literals in test arguments are clearer than static fields
+       CA1822: test-only controller actions are instance methods by MVC convention
+       CA2234: string URIs read better than Uri objects in HTTP tests
+       CA1515: test types are public by xUnit convention -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CA1861;CA1822;CA2234;CA1515</NoWarn>
+  </PropertyGroup>
+</Project>

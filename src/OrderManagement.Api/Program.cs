@@ -1,12 +1,12 @@
+using OrderManagement.Api;
 using OrderManagement.Infrastructure;
 using OrderManagement.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-
 builder.Services.AddInfrastructure();
-builder.Services.AddControllers();
+builder.AddApi();
 
 var app = builder.Build();
 
@@ -16,10 +16,7 @@ if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
 }
 
 app.MapDefaultEndpoints();
-
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
+app.UseApi();
 
 await app.RunAsync();
 
