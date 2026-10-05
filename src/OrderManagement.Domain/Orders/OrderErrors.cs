@@ -13,6 +13,12 @@ public static class OrderErrors
         code: "Order.NotFound",
         description: $"We couldn't find an order with ID {id}.");
 
+    /// <summary>The customer referenced in a new order's body doesn't exist (a 400 on the field, not a 404 on the URL).</summary>
+    public static Error CustomerNotFound(Guid customerId) => Error.Validation(
+        code: "Order.CustomerNotFound",
+        description: $"We couldn't find a customer with ID {customerId}.",
+        metadata: ErrorMetadata.ForField("customerId"));
+
     public static readonly Error LineItemsRequired = Error.Validation(
         code: "Order.LineItemsRequired",
         description: "An order needs at least one line item.",
