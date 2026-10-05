@@ -19,6 +19,17 @@
   <ItemGroup Label="Domain">
     <PackageVersion Include="ErrorOr" Version="2.1.1" />
   </ItemGroup>
+  <ItemGroup Label="API">
+    <PackageVersion Include="Asp.Versioning.Mvc" Version="8.1.1" />
+    <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.31" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.0" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.17.13" />
+    <!-- 9.x on purpose: 10.x moves to Microsoft.OpenApi 2.0, which brings breaking API changes and no benefit here -->
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.6" />
+  </ItemGroup>
   <ItemGroup Label="Persistence">
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.31" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.31" />
