@@ -15,6 +15,7 @@ internal static class HttpAssertions
         var json = JsonDocument.Parse(body).RootElement.Clone();
         json.GetProperty("status").GetInt32().ShouldBe((int)status);
         json.GetProperty("code").GetString().ShouldBe(code);
+        json.GetProperty("type").GetString().ShouldNotBeNullOrWhiteSpace();
         json.GetProperty("title").GetString().ShouldNotBeNullOrWhiteSpace();
         json.GetProperty("traceId").GetString().ShouldNotBeNullOrWhiteSpace();
         json.GetProperty("correlationId").GetString().ShouldNotBeNullOrWhiteSpace();

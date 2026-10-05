@@ -39,6 +39,7 @@ internal static class ProblemDetailsEnricher
             problem.Detail ??= isValidation ? ProblemCatalog.ValidationDetail : entry.Detail;
         }
 
+        problem.Type ??= ProblemCatalog.TypeFor(status);
         problem.Instance ??= http.Request.Path;
         problem.Extensions.TryAdd(ProblemCatalog.TraceIdKey, Activity.Current?.Id ?? http.TraceIdentifier);
 
