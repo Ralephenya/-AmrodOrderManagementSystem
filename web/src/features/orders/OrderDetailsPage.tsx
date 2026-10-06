@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDateTime } from '@/lib/dates'
 import { newIdempotencyKey } from '@/lib/idempotency'
@@ -170,15 +169,14 @@ function OrderDetails({ order, etag }: { order: Order; etag: string | null }) {
                     )}
                   </dd>
                 </div>
-                <Separator />
-                <SummaryItem label="Created" value={formatDateTime(order.createdAt)} />
+                {/* Dividers are borders, not <Separator>: a <dl> may only contain dt/dd groups. */}
+                <SummaryItem label="Created" value={formatDateTime(order.createdAt)} className="border-t pt-4" />
                 <SummaryItem
                   label="Stock"
                   value={order.allocatedAt ? `Allocated ${formatDateTime(order.allocatedAt)}` : 'Not allocated yet'}
                 />
                 <SummaryItem label="Currency" value={order.currencyCode} />
-                <Separator />
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between border-t pt-4">
                   <dt className="text-muted-foreground">Total</dt>
                   <dd className="text-xl font-semibold tracking-tight tabular-nums">{money(order.totalAmount)}</dd>
                 </div>
@@ -191,9 +189,9 @@ function OrderDetails({ order, etag }: { order: Order; etag: string | null }) {
   )
 }
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
+function SummaryItem({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="flex justify-between gap-4">
+    <div className={cn('flex justify-between gap-4', className)}>
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
