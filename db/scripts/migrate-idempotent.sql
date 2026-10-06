@@ -9,8 +9,6 @@ END;
 GO
 
 BEGIN TRANSACTION;
-GO
-
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
     WHERE [MigrationId] = N'20261005173707_InitialCreate'
@@ -26,7 +24,6 @@ BEGIN
         CONSTRAINT [CK_Customers_CountryCode] CHECK (LEN([CountryCode]) = 2)
     );
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -46,7 +43,6 @@ BEGIN
         CONSTRAINT [FK_Orders_Customers_CustomerId] FOREIGN KEY ([CustomerId]) REFERENCES [Customers] ([Id]) ON DELETE NO ACTION
     );
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -65,7 +61,6 @@ BEGIN
         CONSTRAINT [FK_OrderLineItems_Orders_OrderId] FOREIGN KEY ([OrderId]) REFERENCES [Orders] ([Id]) ON DELETE CASCADE
     );
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -74,7 +69,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE UNIQUE INDEX [IX_Customers_Email] ON [Customers] ([Email]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -83,7 +77,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX [IX_Customers_Name] ON [Customers] ([Name]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -92,7 +85,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE UNIQUE INDEX [IX_OrderLineItems_OrderId_ProductSku] ON [OrderLineItems] ([OrderId], [ProductSku]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -101,7 +93,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX [IX_Orders_CustomerId_Status_CreatedAt] ON [Orders] ([CustomerId], [Status], [CreatedAt]) INCLUDE ([TotalAmount], [CurrencyCode]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -110,7 +101,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX [IX_Orders_Status_CreatedAt] ON [Orders] ([Status], [CreatedAt]) INCLUDE ([CustomerId], [TotalAmount], [CurrencyCode]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -118,15 +108,8 @@ IF NOT EXISTS (
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20261005173707_InitialCreate', N'8.0.31');
+    VALUES (N'20261005173707_InitialCreate', N'9.0.20');
 END;
-GO
-
-COMMIT;
-GO
-
-BEGIN TRANSACTION;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -135,7 +118,6 @@ IF NOT EXISTS (
 BEGIN
     ALTER TABLE [Orders] ADD [RowVersion] rowversion NOT NULL;
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -143,15 +125,8 @@ IF NOT EXISTS (
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20261005173758_AddOrderRowVersion', N'8.0.31');
+    VALUES (N'20261005173758_AddOrderRowVersion', N'9.0.20');
 END;
-GO
-
-COMMIT;
-GO
-
-BEGIN TRANSACTION;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -160,7 +135,6 @@ IF NOT EXISTS (
 BEGIN
     ALTER TABLE [Orders] ADD [AllocatedAt] datetime2 NULL;
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -168,15 +142,8 @@ IF NOT EXISTS (
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20261005173810_AddOrderAllocatedAt', N'8.0.31');
+    VALUES (N'20261005173810_AddOrderAllocatedAt', N'9.0.20');
 END;
-GO
-
-COMMIT;
-GO
-
-BEGIN TRANSACTION;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -194,7 +161,6 @@ BEGIN
         CONSTRAINT [PK_IdempotencyKeys] PRIMARY KEY ([ClientId], [Key])
     );
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -203,7 +169,6 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX [IX_IdempotencyKeys_ExpiresAt] ON [IdempotencyKeys] ([ExpiresAt]);
 END;
-GO
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
@@ -211,9 +176,136 @@ IF NOT EXISTS (
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20261005183849_AddIdempotencyKeys', N'8.0.31');
+    VALUES (N'20261005183849_AddIdempotencyKeys', N'9.0.20');
 END;
-GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE TABLE [InboxState] (
+        [Id] bigint NOT NULL IDENTITY,
+        [MessageId] uniqueidentifier NOT NULL,
+        [ConsumerId] uniqueidentifier NOT NULL,
+        [LockId] uniqueidentifier NOT NULL,
+        [RowVersion] rowversion NULL,
+        [Received] datetime2 NOT NULL,
+        [ReceiveCount] int NOT NULL,
+        [ExpirationTime] datetime2 NULL,
+        [Consumed] datetime2 NULL,
+        [Delivered] datetime2 NULL,
+        [LastSequenceNumber] bigint NULL,
+        CONSTRAINT [PK_InboxState] PRIMARY KEY ([Id]),
+        CONSTRAINT [AK_InboxState_MessageId_ConsumerId] UNIQUE ([MessageId], [ConsumerId])
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE TABLE [OutboxState] (
+        [OutboxId] uniqueidentifier NOT NULL,
+        [LockId] uniqueidentifier NOT NULL,
+        [RowVersion] rowversion NULL,
+        [Created] datetime2 NOT NULL,
+        [Delivered] datetime2 NULL,
+        [LastSequenceNumber] bigint NULL,
+        CONSTRAINT [PK_OutboxState] PRIMARY KEY ([OutboxId])
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE TABLE [OutboxMessage] (
+        [SequenceNumber] bigint NOT NULL IDENTITY,
+        [EnqueueTime] datetime2 NULL,
+        [SentTime] datetime2 NOT NULL,
+        [Headers] nvarchar(max) NULL,
+        [Properties] nvarchar(max) NULL,
+        [InboxMessageId] uniqueidentifier NULL,
+        [InboxConsumerId] uniqueidentifier NULL,
+        [OutboxId] uniqueidentifier NULL,
+        [MessageId] uniqueidentifier NOT NULL,
+        [ContentType] nvarchar(256) NOT NULL,
+        [MessageType] nvarchar(max) NOT NULL,
+        [Body] nvarchar(max) NOT NULL,
+        [ConversationId] uniqueidentifier NULL,
+        [CorrelationId] uniqueidentifier NULL,
+        [InitiatorId] uniqueidentifier NULL,
+        [RequestId] uniqueidentifier NULL,
+        [SourceAddress] nvarchar(256) NULL,
+        [DestinationAddress] nvarchar(256) NULL,
+        [ResponseAddress] nvarchar(256) NULL,
+        [FaultAddress] nvarchar(256) NULL,
+        [ExpirationTime] datetime2 NULL,
+        CONSTRAINT [PK_OutboxMessage] PRIMARY KEY ([SequenceNumber]),
+        CONSTRAINT [FK_OutboxMessage_InboxState_InboxMessageId_InboxConsumerId] FOREIGN KEY ([InboxMessageId], [InboxConsumerId]) REFERENCES [InboxState] ([MessageId], [ConsumerId]),
+        CONSTRAINT [FK_OutboxMessage_OutboxState_OutboxId] FOREIGN KEY ([OutboxId]) REFERENCES [OutboxState] ([OutboxId])
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE INDEX [IX_InboxState_Delivered] ON [InboxState] ([Delivered]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE INDEX [IX_OutboxMessage_EnqueueTime] ON [OutboxMessage] ([EnqueueTime]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE INDEX [IX_OutboxMessage_ExpirationTime] ON [OutboxMessage] ([ExpirationTime]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    EXEC(N'CREATE UNIQUE INDEX [IX_OutboxMessage_InboxMessageId_InboxConsumerId_SequenceNumber] ON [OutboxMessage] ([InboxMessageId], [InboxConsumerId], [SequenceNumber]) WHERE [InboxMessageId] IS NOT NULL AND [InboxConsumerId] IS NOT NULL');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    EXEC(N'CREATE UNIQUE INDEX [IX_OutboxMessage_OutboxId_SequenceNumber] ON [OutboxMessage] ([OutboxId], [SequenceNumber]) WHERE [OutboxId] IS NOT NULL');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    CREATE INDEX [IX_OutboxState_Created] ON [OutboxState] ([Created]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261005191701_AddMessagingOutbox'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261005191701_AddMessagingOutbox', N'9.0.20');
+END;
 
 COMMIT;
 GO

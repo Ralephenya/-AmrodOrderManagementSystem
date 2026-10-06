@@ -2,7 +2,7 @@
 
 The schema is owned by EF Core code-first migrations in
 [`src/OrderManagement.Infrastructure/Persistence/Migrations`](../src/OrderManagement.Infrastructure/Persistence/Migrations).
-`dotnet-ef` is pinned to **8.0.31** in the repo's tool manifest, so run `dotnet tool restore` once.
+`dotnet-ef` is pinned to **9.0.20** (EF Core 9, which supports .NET 8; required by MassTransit 8.5) in the repo's tool manifest, so run `dotnet tool restore` once.
 
 ## Migration history
 
@@ -12,6 +12,7 @@ The schema is owned by EF Core code-first migrations in
 | `AddOrderRowVersion` | `Orders.RowVersion rowversion` for optimistic concurrency | additive |
 | `AddOrderAllocatedAt` | `Orders.AllocatedAt datetime2 NULL`, set by the worker | additive, optional |
 | `AddIdempotencyKeys` | `IdempotencyKeys` (PK ClientId + Key, request hash, stored outcome, `IX_IdempotencyKeys_ExpiresAt`) | additive, new table |
+| `AddMessagingOutbox` | MassTransit `OutboxMessage`, `OutboxState` (transactional outbox) and `InboxState` (consumer de-duplication) | additive, new tables |
 
 ## Commands
 
@@ -30,7 +31,7 @@ EF="dotnet ef --project src/OrderManagement.Infrastructure --startup-project src
 | Roll back everything | `$EF database update 0` |
 | Remove the last, *unapplied* migration | `$EF migrations remove` |
 | Idempotent deploy script | `$EF migrations script --idempotent -o db/scripts/migrate-idempotent.sql` |
-| Rollback script (from → to) | `$EF migrations script AddOrderAllocatedAt AddOrderRowVersion -o db/scripts/rollback-AddOrderAllocatedAt.sql` |
+| Rollback script (from → to) | `$EF migrations script AddMessagingOutbox AddIdempotencyKeys -o db/scripts/rollback-AddMessagingOutbox.sql` |
 | Migration bundle (for containers/CD) | `$EF migrations bundle --self-contained -r linux-x64 -o efbundle` |
 
 The design-time factory targets LocalDB by default. To point the tools somewhere else, set
@@ -45,7 +46,15 @@ rolled back and run with elevated rights that the app itself doesn't hold.
 
 - [`scripts/migrate-idempotent.sql`](scripts/migrate-idempotent.sql): every migration, guarded by
   `__EFMigrationsHistory` checks, so it is safe to run against a database at any version.
-- [`scripts/rollback-AddOrderAllocatedAt.sql`](scripts/rollback-AddOrderAllocatedAt.sql): an example down-script.
+- [`scripts/rollback-AddMessagingOutbox.sql`](scripts/rollback-AddMessagingOutbox.sql): down-script for the latest migration (back to `AddIdempotencyKeys`). Roll back one migration at a time, newest first.
+
+Apply them with `sqlcmd -I` (or SSMS / Azure Data Studio, which default to it). `-I` turns on
+`QUOTED_IDENTIFIER`, which SQL Server requires for the filtered indexes in the MassTransit outbox tables. Plain
+`sqlcmd` defaults it off and fails with *Msg 1934*:
+
+```bash
+sqlcmd -S <server> -d OrderManagement -E -b -I -i db/scripts/migrate-idempotent.sql
+```
 
 Regenerate both after adding a migration. CI applies the idempotent script to an empty SQL Server
 container to prove it compiles and runs.

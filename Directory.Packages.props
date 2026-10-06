@@ -30,9 +30,17 @@
     <!-- 9.x on purpose: 10.x moves to Microsoft.OpenApi 2.0, which brings breaking API changes and no benefit here -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
+  <ItemGroup Label="Messaging">
+    <!-- Pinned to 8.x: Apache-2.0. MassTransit 9+ requires a commercial licence. -->
+    <PackageVersion Include="MassTransit" Version="8.5.11" />
+    <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="8.5.11" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.11" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.6.0" />
+  </ItemGroup>
   <ItemGroup Label="Persistence">
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.31" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.31" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="10.1.0" />

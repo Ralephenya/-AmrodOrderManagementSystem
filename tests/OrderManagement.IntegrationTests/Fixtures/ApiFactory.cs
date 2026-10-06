@@ -30,6 +30,12 @@ public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFacto
         // Every test shares one mock user, so the per-user write limit is raised; HttpHardeningTests lowers it again.
         builder.UseSetting("RateLimiting:WritesPerMinute", "100000");
 
+        // No broker in tests: the production messaging registration (including the EF bus outbox) runs on the in-memory
+        // transport. Deliberately NOT AddMassTransitTestHarness(): it replaces the scoped publisher and silently bypasses
+        // the outbox. Deliveries are observed through PublishedEvents instead. A short query delay keeps them fast.
+        builder.UseSetting("Messaging:Transport", "InMemory");
+        builder.UseSetting("Messaging:OutboxQueryDelay", "00:00:00.100");
+
         // Test-only endpoints that exercise the cross-cutting behaviour (see Api/Probes).
         builder.ConfigureTestServices(services =>
         {
