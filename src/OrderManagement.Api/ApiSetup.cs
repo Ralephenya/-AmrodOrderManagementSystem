@@ -12,6 +12,7 @@ using OrderManagement.Api.Common.Validation;
 using OrderManagement.Api.OpenApi;
 using OrderManagement.Api.Services;
 using OrderManagement.Api.Services.Interfaces;
+using OrderManagement.Infrastructure.Messaging;
 using Scalar.AspNetCore;
 
 namespace OrderManagement.Api;
@@ -73,6 +74,11 @@ internal static class ApiSetup
         // Application services: explicit registrations, one line per service, no assembly scanning magic.
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IOrderEventPublisher, OutboxOrderEventPublisher>();
+        services.AddHttpContextAccessor();
+
+        // Publisher only: events go through the transactional outbox. The API hosts no consumers.
+        services.AddMessaging(config, publishThroughOutbox: true);
 
         services.AddApiAuth(config, builder.Environment);
         services.AddApiCors(config);

@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OrderManagement.Api\OrderManagement.Api.csproj" />
+    <ProjectReference Include="..\..\src\OrderManagement.Worker\OrderManagement.Worker.csproj" />
   </ItemGroup>
 
   <ItemGroup>

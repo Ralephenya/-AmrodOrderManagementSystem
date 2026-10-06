@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using OrderManagement.Contracts;
 
 namespace OrderManagement.Api.Common.Http;
 
@@ -9,7 +10,6 @@ namespace OrderManagement.Api.Common.Http;
 /// </summary>
 internal sealed class CorrelationIdMiddleware(RequestDelegate next, ILogger<CorrelationIdMiddleware> logger)
 {
-    private const int MaxLength = 64;
     private static readonly object ItemKey = new();
 
     public async Task InvokeAsync(HttpContext context)
@@ -35,9 +35,5 @@ internal sealed class CorrelationIdMiddleware(RequestDelegate next, ILogger<Corr
 
     public static string? Get(HttpContext context) => context.Items.TryGetValue(ItemKey, out var id) ? id as string : null;
 
-    /// <summary>Only short, plain identifiers are trusted, which keeps header values from injecting into logs.</summary>
-    internal static bool IsSafe(string? value) =>
-        !string.IsNullOrEmpty(value)
-        && value.Length <= MaxLength
-        && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.');
+    internal static bool IsSafe(string? value) => CorrelationIds.IsSafe(value);
 }

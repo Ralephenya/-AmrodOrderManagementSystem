@@ -1,12 +1,9 @@
-using OrderManagement.Infrastructure;
+using OrderManagement.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
-
-builder.Services.AddInfrastructure();
-
-// The OrderCreated consumer (MassTransit) is registered in feature/messaging.
+builder.Services.AddWorker(builder.Configuration);
 
 var host = builder.Build();
 await host.RunAsync();

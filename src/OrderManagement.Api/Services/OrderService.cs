@@ -13,7 +13,7 @@ using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Api.Services;
 
-public sealed class OrderService(AppDbContext db, TimeProvider clock) : IOrderService
+public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEventPublisher events) : IOrderService
 {
     private const string IdempotencyPrimaryKey = "PK_IdempotencyKeys";
 
@@ -40,7 +40,10 @@ public sealed class OrderService(AppDbContext db, TimeProvider clock) : IOrderSe
         }
 
         var order = created.Value;
-        db.Orders.Add(order);
+        db.Orders.Add(order); // assigns the sequential ID the event carries
+
+        // Outbox: the event row and the order commit in one transaction, or neither does.
+        await events.OrderCreatedAsync(order, ct);
         await db.SaveChangesAsync(ct);
 
         return new OrderResult(ToResponse(order), ETags.From(order.RowVersion));
@@ -133,6 +136,12 @@ public sealed class OrderService(AppDbContext db, TimeProvider clock) : IOrderSe
             outcome = transition.IsError
                 ? transition.Errors
                 : new OrderResult(ToResponse(order), ETag: null); // the ETag is known only after the save
+
+            if (!transition.IsError && target == OrderStatus.Paid)
+            {
+                // Same transaction as the status change and the idempotency record: a replay publishes nothing.
+                await events.OrderPaidAsync(order, ct);
+            }
         }
 
         // 3. Record the outcome in the SAME SaveChanges as the status change, so "changed" and "remembered"

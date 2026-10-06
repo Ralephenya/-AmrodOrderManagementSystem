@@ -10,10 +10,14 @@ public sealed class IntegrationTestFixture : IAsyncLifetime, IAsyncDisposable
 {
     private SqlServerDatabase? _database;
     private ApiFactory? _factory;
+    private PublishedEvents? _events;
 
     public SqlServerDatabase Database => _database ?? throw new InvalidOperationException("Fixture not initialised.");
 
     public ApiFactory Factory => _factory ?? throw new InvalidOperationException("Fixture not initialised.");
+
+    /// <summary>Order events the API's outbox actually delivered.</summary>
+    public PublishedEvents Events => _events ?? throw new InvalidOperationException("Fixture not initialised.");
 
     public AppDbContext CreateDbContext() => Database.CreateDbContext();
 
@@ -21,12 +25,18 @@ public sealed class IntegrationTestFixture : IAsyncLifetime, IAsyncDisposable
     {
         _database = await SqlServerDatabase.StartAsync();
         _factory = new ApiFactory(_database);
+        _events = await PublishedEvents.ConnectAsync(_factory.Services); // also starts the in-memory API host
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync() => await DisposeAsync();
 
     public async Task DisposeAsync()
     {
+        if (_events is not null)
+        {
+            await _events.DisposeAsync();
+        }
+
         if (_factory is not null)
         {
             await _factory.DisposeAsync();
