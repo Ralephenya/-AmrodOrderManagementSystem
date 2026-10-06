@@ -1,0 +1,21 @@
+# Build contexts are the repo root. Send only what the images build from.
+**/bin/
+**/obj/
+**/node_modules/
+**/.vs/
+**/.idea/
+.git/
+.github/
+.claude/
+docs/
+requests/
+tests/
+web/dist/
+web/coverage/
+web/test-results/
+web/playwright-report/
+web/blob-report/
+**/*.user
+**/.env
+**/.env.*
+!**/.env.example

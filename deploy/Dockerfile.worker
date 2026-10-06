@@ -1,0 +1,23 @@
+# Order Management worker (MassTransit consumers: stock allocation and fulfilment). Build context: the repo root.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY global.json nuget.config Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY src/OrderManagement.Worker/OrderManagement.Worker.csproj src/OrderManagement.Worker/
+COPY src/OrderManagement.Infrastructure/OrderManagement.Infrastructure.csproj src/OrderManagement.Infrastructure/
+COPY src/OrderManagement.Domain/OrderManagement.Domain.csproj src/OrderManagement.Domain/
+COPY src/OrderManagement.Contracts/OrderManagement.Contracts.csproj src/OrderManagement.Contracts/
+COPY src/OrderManagement.ServiceDefaults/OrderManagement.ServiceDefaults.csproj src/OrderManagement.ServiceDefaults/
+RUN dotnet restore src/OrderManagement.Worker/OrderManagement.Worker.csproj
+
+COPY src/ src/
+RUN dotnet publish src/OrderManagement.Worker/OrderManagement.Worker.csproj -c Release --no-restore -o /app /p:UseAppHost=false
+
+# The worker serves no HTTP, but ServiceDefaults (health checks, OpenTelemetry) references the ASP.NET Core shared
+# framework, so it needs the aspnet runtime, not the plain one.
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+USER $APP_UID
+ENTRYPOINT ["dotnet", "OrderManagement.Worker.dll"]

@@ -1,0 +1,117 @@
+# The whole system in containers: SQL Server, RabbitMQ, a one-shot migrator, the API, the worker and the web app.
+#
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+# Then open http://localhost:8080 (app), http://localhost:5000/swagger (API docs) and http://localhost:15672
+# (RabbitMQ, guest/guest). This is a local, demo-grade stack: it runs the API in Development so the mock
+# Entra sign-in (POST /api/v1/dev/token) works without a tenant. Passwords below are local defaults only;
+# override MSSQL_SA_PASSWORD in deploy/.env (see .env.example).
+
+name: order-management
+
+x-dotnet-env: &dotnet-env
+  ConnectionStrings__OrdersDb: "Server=mssql,1433;Database=OrderManagement;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Local_dev_only_P4ssw0rd!};TrustServerCertificate=True;Encrypt=True"
+  ConnectionStrings__messaging: "amqp://guest:guest@rabbitmq:5672"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Local_dev_only_P4ssw0rd!}"
+    ports:
+      - "14333:1433" # 14333 on the host so it doesn't clash with a local SQL Server
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  rabbitmq:
+    image: rabbitmq:4.3-management
+    ports:
+      - "15672:15672" # management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 15s
+
+  # Applies pending EF Core migrations, then exits. The API and worker start only once it has succeeded.
+  migrations:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.migrations
+    image: order-management/migrations:local
+    environment:
+      <<: *dotnet-env
+    depends_on:
+      mssql:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    image: order-management/api:local
+    environment:
+      <<: *dotnet-env
+      ASPNETCORE_ENVIRONMENT: Development
+      Database__ApplyMigrationsOnStartup: "false" # the migrations service owns the schema
+      Cors__AllowedOrigins__0: "http://localhost:8080"
+    ports:
+      - "5000:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      # The aspnet image has no curl, so ask /readiness (SQL + broker) over bash's /dev/tcp.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /readiness HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.worker
+    image: order-management/worker:local
+    environment:
+      <<: *dotnet-env
+      DOTNET_ENVIRONMENT: Development
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    image: order-management/web:local
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  mssql-data:
+  rabbitmq-data:
