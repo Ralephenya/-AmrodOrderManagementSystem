@@ -1,0 +1,26 @@
+# Order Management API. Build context: the repo root.
+
+# The repo pins SDK 10 (global.json); the services themselves target net8.0.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Restore first, from the project files only, so the layer is reused until a dependency changes.
+COPY global.json nuget.config Directory.Build.props Directory.Packages.props .editorconfig ./
+COPY src/OrderManagement.Api/OrderManagement.Api.csproj src/OrderManagement.Api/
+COPY src/OrderManagement.Infrastructure/OrderManagement.Infrastructure.csproj src/OrderManagement.Infrastructure/
+COPY src/OrderManagement.Domain/OrderManagement.Domain.csproj src/OrderManagement.Domain/
+COPY src/OrderManagement.Contracts/OrderManagement.Contracts.csproj src/OrderManagement.Contracts/
+COPY src/OrderManagement.ServiceDefaults/OrderManagement.ServiceDefaults.csproj src/OrderManagement.ServiceDefaults/
+RUN dotnet restore src/OrderManagement.Api/OrderManagement.Api.csproj
+
+COPY src/ src/
+RUN dotnet publish src/OrderManagement.Api/OrderManagement.Api.csproj -c Release --no-restore -o /app /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /app .
+# Non-root user shipped with the .NET 8 images; 8080 is their default unprivileged port.
+USER $APP_UID
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "OrderManagement.Api.dll"]

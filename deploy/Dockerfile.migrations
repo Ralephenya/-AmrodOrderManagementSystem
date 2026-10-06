@@ -1,0 +1,31 @@
+# One-shot database migrator: an EF Core migration bundle. It applies pending migrations and exits, as its own
+# deploy step before the API starts (the app never migrates a shared database itself; see db/README.md).
+# Build context: the repo root.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+# `dotnet ef` runs the project's design-time code, which targets net8.0. The SDK 10 image only ships the .NET 10
+# runtime, so add the .NET 8 one alongside it.
+COPY --from=mcr.microsoft.com/dotnet/runtime:8.0 /usr/share/dotnet/shared/Microsoft.NETCore.App /usr/share/dotnet/shared/Microsoft.NETCore.App
+
+COPY global.json nuget.config Directory.Build.props Directory.Packages.props .editorconfig dotnet-tools.json ./
+RUN dotnet tool restore
+COPY src/OrderManagement.Infrastructure/OrderManagement.Infrastructure.csproj src/OrderManagement.Infrastructure/
+COPY src/OrderManagement.Domain/OrderManagement.Domain.csproj src/OrderManagement.Domain/
+COPY src/OrderManagement.Contracts/OrderManagement.Contracts.csproj src/OrderManagement.Contracts/
+RUN dotnet restore src/OrderManagement.Infrastructure/OrderManagement.Infrastructure.csproj
+
+COPY src/ src/
+RUN dotnet ef migrations bundle \
+      --project src/OrderManagement.Infrastructure \
+      --startup-project src/OrderManagement.Infrastructure \
+      --self-contained -r linux-x64 \
+      --output /out/efbundle
+
+# Self-contained, so only the native dependencies are needed.
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0 AS runtime
+WORKDIR /app
+COPY --from=build /out/efbundle .
+USER $APP_UID
+# The bundle reads the target from --connection; compose and CI pass it through this variable.
+ENTRYPOINT ["/bin/sh", "-c", "exec ./efbundle --connection \"$ConnectionStrings__OrdersDb\""]
