@@ -1,7 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 // SQL Server LocalDB for local development (see appsettings.Development.json). Docker Compose and CI use a
-// SQL Server container instead. The React web app is added in feature/web-app.
+// SQL Server container instead.
 var ordersDb = builder.AddConnectionString("OrdersDb");
 
 var api = builder.AddProject<Projects.OrderManagement_Api>("api")
@@ -29,5 +29,14 @@ else
     api.WithReference(messaging).WaitFor(messaging);
     worker.WithReference(messaging).WaitFor(messaging);
 }
+
+// The React app (Vite dev server). It is served on 5173, the origin the API's Development CORS policy allows.
+// It calls the API over HTTPS: the API redirects HTTP to HTTPS, and a browser's CORS preflight can't follow
+// a redirect.
+builder.AddViteApp("web", "../../web")
+    .WithEndpoint("http", endpoint => endpoint.Port = 5173)
+    .WithEnvironment("VITE_API_BASE_URL", api.GetEndpoint("https"))
+    .WithReference(api)
+    .WaitFor(api);
 
 builder.Build().Run();

@@ -1,0 +1,1905 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Amrod Order Management API",
+    "description": "Customers and orders for SADC markets. Unversioned paths (/api/orders) are aliases of the current version. Errors use RFC 7807 ProblemDetails with a stable `code`, a friendly `title`/`detail`, and a `correlationId` to quote to support.",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/v1/customers": {
+      "post": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Create a customer.",
+        "description": "The email is stored lower-cased and must be unique. The country must be a SADC member state; it decides which\r\ncurrencies the customer may order in.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Search customers by name or email prefix, paged.",
+        "description": "`search` matches names or emails that start with the text. `pageSize` is at most 100.\r\n            `sort` is `name` (default) or `createdAt`; prefix with `-` for descending.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Matches customers whose name or email <b>starts with</b> this text (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`name` (default) or `createdAt`; prefix with `-` for descending.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based page number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Items per page, 1 to 100.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponsePagedResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponsePagedResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponsePagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Get a customer by ID.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dev/token": {
+      "post": {
+        "tags": [
+          "DevToken"
+        ],
+        "summary": "Issue a development token with the requested roles.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevTokenRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevTokenRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevTokenResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevTokenResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Create an order.",
+        "description": "The server validates the customer and the currency (it must be permitted for the customer's country), checks each\r\nline, and computes `totalAmount`. New orders start `Pending`. Returns the order with its `ETag`.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List orders, filtered and sorted, paged.",
+        "description": "Filter by `customerId` and/or `status`. `sort` is `createdAt` or `total`; prefix with\r\n`-` for descending (default `-createdAt`, newest first). `pageSize` is at most 100.",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "Only this customer's orders.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Pending, Paid, Fulfilled or Cancelled (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`createdAt` or `total`; prefix with `-` for descending. Default `-createdAt` (newest first).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "1-based page number.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Items per page, 1 to 100.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummaryResponsePagedResult"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummaryResponsePagedResult"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummaryResponsePagedResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get an order with its line items.",
+        "description": "Responses carry an `ETag`. Send it back as `If-None-Match` to get `304 Not Modified` (no body) when\r\nthe order hasn't changed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/status": {
+      "put": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Change an order's status (idempotent).",
+        "description": "\r\nAllowed: Pending → Paid | Cancelled, Paid → Fulfilled (once stock is allocated) | Cancelled.\r\n\r\n<b>Idempotency-Key</b> (required): a unique value such as a UUID, chosen per intended change. Retrying with the\r\n            same key and body returns the original response (header `Idempotent-Replayed: true`) without applying it\r\n            again. Reusing a key for a different request returns 422. Keys are kept for 24 hours.\r\n\r\n<b>If-Match</b> (optional): the ETag you last saw. If the order changed since, you get 412.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/countries": {
+      "get": {
+        "tags": [
+          "ReferenceData"
+        ],
+        "summary": "The 16 SADC countries we serve and the ISO 4217 currencies permitted for each.",
+        "description": "Namibia, Lesotho and Eswatini (Common Monetary Area) also accept ZAR. Zimbabwe accepts ZWL and USD.\r\nUse `minorUnits` to format amounts and to limit decimal places in price inputs.",
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryResponse"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryResponse"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/top-spenders": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Top customers by spend over a recent window, including customers who spent nothing.",
+        "description": "Ranks every customer whose country can order in `currency` (for ZAR that includes the CMA countries),\r\nhighest spend first. Customers with no qualifying orders are listed with a total of 0.",
+        "parameters": [
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "ISO 4217. Spend is never summed across currencies.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "description": "Look-back window in days (1–366). Default 90.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "description": "How many customers to return (1–100). Default 10.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopSpendersResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopSpendersResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopSpendersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/customers/{customerId}/running-totals": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A customer's cumulative spend, order by order, in one currency.",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "ISO 4217. Must be a currency the customer's country may order in.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunningTotalsResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunningTotalsResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunningTotalsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CountryResponse": {
+        "required": [
+          "code",
+          "currencies",
+          "isCommonMonetaryArea",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2, e.g. `ZA`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "isCommonMonetaryArea": {
+            "type": "boolean",
+            "description": "True for ZA, NA, LS and SZ."
+          },
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyResponse"
+            },
+            "description": "Currencies customers in this country may order in, local currency first."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateCustomerRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full name or company name, up to 200 characters.",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Unique (case-insensitive) email address, up to 320 characters.",
+            "nullable": true
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 code of a SADC member state, e.g. `ZA`.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateOrderLineRequest": {
+        "type": "object",
+        "properties": {
+          "productSku": {
+            "type": "string",
+            "description": "Up to 64 characters; stored upper case.",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "At least 1.",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "description": "In the order's currency, ≥ 0, with no more decimals than the currency allows.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "An existing customer. Their country decides which currencies are allowed.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "ISO 4217, e.g. `ZAR`. Must be permitted for the customer's country.",
+            "nullable": true
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrderLineRequest"
+            },
+            "description": "1 to 100 lines. Each SKU may appear once.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrencyResponse": {
+        "required": [
+          "code",
+          "minorUnits",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ISO 4217, e.g. `ZAR`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "minorUnits": {
+            "type": "integer",
+            "description": "Decimal places the currency uses (KMF uses 0).",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomerResponse": {
+        "required": [
+          "countryCode",
+          "createdAt",
+          "email",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Customer ID.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name as entered (trimmed)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Email, lower-cased."
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2, upper case."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "UTC.",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomerResponsePagedResult": {
+        "required": [
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "hasNext": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "A page of results plus the metadata a UI needs to render pagination."
+      },
+      "DevTokenRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name put in the token's `name` claim.",
+            "nullable": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "App roles to grant: any of Orders.Read, Orders.Write, Orders.Admin.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DevTokenResponse": {
+        "required": [
+          "accessToken",
+          "expiresIn",
+          "roles",
+          "tokenType"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT to send as `Authorization: Bearer <token>`."
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "Always `Bearer`."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Lifetime in seconds.",
+            "format": "int32"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Roles granted."
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderLineItemResponse": {
+        "required": [
+          "id",
+          "lineTotal",
+          "productSku",
+          "quantity",
+          "unitPrice"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productSku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "lineTotal": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderResponse": {
+        "required": [
+          "allowedTransitions",
+          "createdAt",
+          "currencyCode",
+          "customerId",
+          "id",
+          "lineItems",
+          "status",
+          "totalAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Order ID.",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "description": "Owning customer.",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "ISO 4217."
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "Σ(quantity × unitPrice), computed by the server.",
+            "format": "double"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "UTC.",
+            "format": "date-time"
+          },
+          "allocatedAt": {
+            "type": "string",
+            "description": "UTC time stock was allocated, or null.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "allowedTransitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderStatus"
+            },
+            "description": "Statuses this order can move to next, so clients only offer legal actions."
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineItemResponse"
+            },
+            "description": "The order's lines."
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrderStatus": {
+        "enum": [
+          "Pending",
+          "Paid",
+          "Fulfilled",
+          "Cancelled"
+        ],
+        "type": "string"
+      },
+      "OrderSummaryResponse": {
+        "required": [
+          "createdAt",
+          "currencyCode",
+          "customerId",
+          "customerName",
+          "id",
+          "status",
+          "totalAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "A row in the order list (no line items, to keep list queries on the covering index)."
+      },
+      "OrderSummaryResponsePagedResult": {
+        "required": [
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummaryResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "readOnly": true
+          },
+          "hasNext": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "A page of results plus the metadata a UI needs to render pagination."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "RunningTotalPoint": {
+        "required": [
+          "createdAt",
+          "orderId",
+          "runningTotal",
+          "status",
+          "totalAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Order ID.",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "UTC.",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "This order's total.",
+            "format": "double"
+          },
+          "runningTotal": {
+            "type": "number",
+            "description": "Cumulative spend up to and including this order.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RunningTotalsResponse": {
+        "required": [
+          "currencyCode",
+          "customerId",
+          "orders"
+        ],
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunningTotalPoint"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TopSpenderResponse": {
+        "required": [
+          "countryCode",
+          "customerId",
+          "name",
+          "orderCount",
+          "rank",
+          "totalSpend"
+        ],
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "description": "1-based position.",
+            "format": "int32"
+          },
+          "customerId": {
+            "type": "string",
+            "description": "Customer ID.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Customer name."
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2."
+          },
+          "totalSpend": {
+            "type": "number",
+            "description": "Sum of Paid and Fulfilled orders in the window.",
+            "format": "double"
+          },
+          "orderCount": {
+            "type": "integer",
+            "description": "Number of those orders.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TopSpendersResponse": {
+        "required": [
+          "currencyCode",
+          "customers",
+          "sinceUtc",
+          "untilUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "currencyCode": {
+            "type": "string",
+            "description": "The single currency all amounts are in."
+          },
+          "sinceUtc": {
+            "type": "string",
+            "description": "Start of the window (inclusive).",
+            "format": "date-time"
+          },
+          "untilUtc": {
+            "type": "string",
+            "description": "When the report was produced.",
+            "format": "date-time"
+          },
+          "customers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopSpenderResponse"
+            },
+            "description": "Ranked by spend; customers without qualifying orders appear with 0."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateOrderStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Target status: `Paid`, `Fulfilled` or `Cancelled`.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "additionalProperties": { }
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Microsoft Entra access token. In Development, get one from POST /api/v1/dev/token.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Customers",
+      "description": "Customers in SADC member states."
+    },
+    {
+      "name": "DevToken",
+      "description": "Mints mock-Entra access tokens so Swagger, the web app and tests can call the API without a tenant.\r\nExists only when `Auth:Mode` is `Mock` in Development or Testing; everywhere else it is a 404."
+    },
+    {
+      "name": "Orders",
+      "description": "Orders with line items, priced in a currency permitted for the customer's SADC country."
+    },
+    {
+      "name": "ReferenceData",
+      "description": "Reference data the UI needs to build forms (countries and the currencies each may order in)."
+    },
+    {
+      "name": "Reports",
+      "description": "Sales reports, run as hand-written SQL through Dapper. Spend means Paid and Fulfilled orders only, always within one\r\ncurrency. Cross-customer financial data, so these require `Orders.Admin`."
+    }
+  ]
+}
