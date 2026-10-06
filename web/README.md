@@ -49,6 +49,29 @@ A type error after regenerating means the app is out of step with the API.
 | `npm run typecheck` | `tsc` in strict mode |
 | `npm run lint` | oxlint |
 | `npm run build` | Typecheck and production build to `dist/` |
+| `npm run e2e` | Builds the .NET solution, then runs the Playwright end-to-end tests (see below) |
+| `npm run e2e:ui` / `e2e:report` | Playwright's interactive runner / the last run's HTML report |
+
+## End-to-end tests
+
+Playwright drives the real app in Chromium against the real API, worker, SQL Server and RabbitMQ (`e2e/`):
+
+- **Journey (from the brief):** create a customer → create an order → mark it paid → the worker allocates and fulfils
+  it, and the page updates by itself. Also: cancel after confirming, CMA customers ordering in their own currency or
+  ZAR, a duplicate email shown on the field, and price decimals checked per currency before anything is sent.
+- **Accessibility:** an axe-core WCAG 2.1 AA scan of every page in light and dark themes. Serious or critical
+  violations fail the run.
+
+By default `npm run e2e` starts an isolated stack, so your dev database and ports are untouched. It runs RabbitMQ in
+Docker (reusing one already on 5672), and the API on 5150 and the worker against their own LocalDB database
+(`OrderManagement_E2E`), plus Vite on 5174. It needs Docker and SQL LocalDB. First time only:
+`npx playwright install chromium`.
+
+To test a stack that's already running (Aspire, docker compose, CI), point at it and nothing is started:
+
+```bash
+E2E_BASE_URL=http://localhost:5173 npx playwright test
+```
 
 ## Look and feel
 

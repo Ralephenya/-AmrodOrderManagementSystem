@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "api:types": "openapi-typescript openapi/v1.json -o src/api/schema.d.ts",
-    "api:pull": "curl -sf -o openapi/v1.json http://localhost:5050/swagger/v1/swagger.json && npm run api:types"
+    "api:pull": "curl -sf -o openapi/v1.json http://localhost:5050/swagger/v1/swagger.json && npm run api:types",
+    "e2e": "dotnet build ../OrderManagement.slnx -v q -nologo && playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -38,6 +41,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
