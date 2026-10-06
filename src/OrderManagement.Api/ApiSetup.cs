@@ -14,6 +14,8 @@ using OrderManagement.Api.Services;
 using OrderManagement.Api.Services.Interfaces;
 using OrderManagement.Infrastructure.Messaging;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Events;
 
 namespace OrderManagement.Api;
 
@@ -75,6 +77,7 @@ internal static class ApiSetup
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IOrderEventPublisher, OutboxOrderEventPublisher>();
+        services.AddScoped<IReportService, ReportService>();
         services.AddHttpContextAccessor();
 
         // Publisher only: events go through the transactional outbox. The API hosts no consumers.
@@ -91,6 +94,28 @@ internal static class ApiSetup
     {
         // Order matters: correlation first so every later component (including error handling) can use it.
         app.UseMiddleware<CorrelationIdMiddleware>();
+
+        // One structured line per request: method, path, status, duration, correlation ID and caller. Health probes are
+        // logged at Verbose (i.e. not at all by default) so they don't drown real traffic.
+        app.UseSerilogRequestLogging(logging =>
+        {
+            logging.GetLevel = (http, _, exception) =>
+                exception is not null || http.Response.StatusCode >= 500 ? LogEventLevel.Error
+                : IsHealthProbe(http.Request.Path) ? LogEventLevel.Verbose
+                : LogEventLevel.Information;
+            logging.EnrichDiagnosticContext = (diagnostics, http) =>
+            {
+                if (CorrelationIdMiddleware.Get(http) is { } correlationId)
+                {
+                    diagnostics.Set("CorrelationId", correlationId);
+                }
+
+                if (http.User.FindFirst("oid")?.Value is { } userId)
+                {
+                    diagnostics.Set("UserId", userId); // Entra object ID: a pseudonymous identifier, not a name or email
+                }
+            };
+        });
         app.UseExceptionHandler();
         app.UseStatusCodePages(); // empty 401/403/404/405 responses become ProblemDetails
         app.UseMiddleware<SecurityHeadersMiddleware>();
@@ -127,6 +152,9 @@ internal static class ApiSetup
 
         return app;
     }
+
+    private static bool IsHealthProbe(PathString path) =>
+        path.StartsWithSegments(Extensions.LivenessPath) || path.StartsWithSegments(Extensions.ReadinessPath);
 
     private static void UseSwaggerDocuments(this WebApplication app)
     {

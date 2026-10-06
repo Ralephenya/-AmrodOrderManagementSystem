@@ -9,11 +9,13 @@ using OrderManagement.Api.Services.Interfaces;
 using OrderManagement.Domain.Common;
 using OrderManagement.Domain.Orders;
 using OrderManagement.Infrastructure.Idempotency;
+using OrderManagement.Infrastructure.Observability;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Api.Services;
 
-public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEventPublisher events) : IOrderService
+public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEventPublisher events, OrderMetrics metrics)
+    : IOrderService
 {
     private const string IdempotencyPrimaryKey = "PK_IdempotencyKeys";
 
@@ -45,6 +47,7 @@ public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEven
         // Outbox: the event row and the order commit in one transaction, or neither does.
         await events.OrderCreatedAsync(order, ct);
         await db.SaveChangesAsync(ct);
+        metrics.OrderCreated(order.CurrencyCode);
 
         return new OrderResult(ToResponse(order), ETags.From(order.RowVersion));
     }
@@ -121,6 +124,7 @@ public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEven
 
         // 2. Decide the outcome against the current state.
         var order = await db.Orders.Include(o => o.LineItems).SingleOrDefaultAsync(o => o.Id == id, ct);
+        var previousStatus = order?.Status;
         ErrorOr<OrderResult> outcome;
         if (order is null)
         {
@@ -175,9 +179,13 @@ public sealed class OrderService(AppDbContext db, TimeProvider clock, IOrderEven
                 : new StatusChangeResult(ConcurrencyConflict, Replayed: false);
         }
 
-        return new StatusChangeResult(
-            outcome.IsError ? outcome : new OrderResult(outcome.Value.Order, ETags.From(order!.RowVersion)),
-            Replayed: false);
+        if (outcome.IsError)
+        {
+            return new StatusChangeResult(outcome, Replayed: false);
+        }
+
+        metrics.StatusChanged(previousStatus!.Value, target); // committed, and not a replay
+        return new StatusChangeResult(new OrderResult(outcome.Value.Order, ETags.From(order!.RowVersion)), Replayed: false);
     }
 
     private Task<IdempotencyRecord?> FindRecordAsync(IdempotencyRequest idempotency, CancellationToken ct) =>

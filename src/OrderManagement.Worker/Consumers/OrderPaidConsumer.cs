@@ -1,12 +1,14 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Contracts.Orders;
+using OrderManagement.Infrastructure.Observability;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Worker.Consumers;
 
 /// <summary>Fulfils a paid order whose stock is already allocated. If allocation is still running, it fulfils the order itself.</summary>
-public sealed partial class OrderPaidConsumer(AppDbContext db, ILogger<OrderPaidConsumer> logger) : IConsumer<OrderPaid>
+public sealed partial class OrderPaidConsumer(AppDbContext db, OrderMetrics metrics, ILogger<OrderPaidConsumer> logger)
+    : IConsumer<OrderPaid>
 {
     public async Task Consume(ConsumeContext<OrderPaid> context)
     {
@@ -23,6 +25,7 @@ public sealed partial class OrderPaidConsumer(AppDbContext db, ILogger<OrderPaid
         }
 
         await db.SaveChangesAsync(ct);
+        metrics.OrderFulfilled("worker");
         LogFulfilled(logger, order.Id);
     }
 

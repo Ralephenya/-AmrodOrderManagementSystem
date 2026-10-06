@@ -18,7 +18,7 @@ public class SchemaTests(IntegrationTestFixture fixture)
 
         (await db.Database.GetPendingMigrationsAsync()).ShouldBeEmpty();
         (await db.Database.GetAppliedMigrationsAsync()).Select(m => m[15..]).ShouldBe(
-            ["InitialCreate", "AddOrderRowVersion", "AddOrderAllocatedAt", "AddIdempotencyKeys", "AddMessagingOutbox"]);
+            ["InitialCreate", "AddOrderRowVersion", "AddOrderAllocatedAt", "AddIdempotencyKeys", "AddMessagingOutbox", "AddCustomerCountryCodeIndex"]);
     }
 
     [Fact]
