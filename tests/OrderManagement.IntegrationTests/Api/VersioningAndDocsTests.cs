@@ -56,6 +56,30 @@ public class VersioningAndDocsTests(IntegrationTestFixture fixture)
     }
 
     [Fact]
+    public async Task OpenApiDocument_MarksResponseFieldsRequired_AndNamesQueryParametersInCamelCase()
+    {
+        // The web app generates its TypeScript types from this document, so these shapes are part of its contract.
+        var doc = await fixture.Factory.CreateClient().GetFromJsonAsync<JsonElement>("/swagger/v1/swagger.json");
+        var schemas = doc.GetProperty("components").GetProperty("schemas");
+
+        static string[] Required(JsonElement schema) =>
+            schema.TryGetProperty("required", out var required) ? [.. required.EnumerateArray().Select(r => r.GetString()!)] : [];
+
+        var order = Required(schemas.GetProperty("OrderResponse"));
+        order.ShouldContain("id");
+        order.ShouldContain("status");
+        order.ShouldContain("totalAmount");
+        order.ShouldContain("lineItems");
+        order.ShouldNotContain("allocatedAt"); // nullable: null until stock is allocated
+        Required(schemas.GetProperty("OrderSummaryResponsePagedResult")).ShouldContain("totalPages");
+        Required(schemas.GetProperty("CreateOrderRequest")).ShouldBeEmpty(); // requests are the validators' business
+
+        var listOrders = doc.GetProperty("paths").GetProperty("/api/v1/orders").GetProperty("get").GetProperty("parameters");
+        listOrders.EnumerateArray().Select(p => p.GetProperty("name").GetString())
+            .ShouldBe(["customerId", "status", "sort", "page", "pageSize"], ignoreOrder: true);
+    }
+
+    [Fact]
     public async Task ScalarReference_IsServed()
     {
         var response = await fixture.Factory.CreateClient().GetAsync("/scalar/v1");

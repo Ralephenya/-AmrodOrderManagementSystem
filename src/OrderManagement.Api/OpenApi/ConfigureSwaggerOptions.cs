@@ -42,6 +42,8 @@ internal sealed class ConfigureSwaggerOptions(IApiVersionDescriptionProvider ver
         });
 
         options.SupportNonNullableReferenceTypes();
+        options.SchemaFilter<RequiredResponsePropertiesSchemaFilter>();
+        options.OperationFilter<CamelCaseQueryParametersOperationFilter>();
         options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "OrderManagement.Api.xml"), includeControllerXmlComments: true);
     }
 }
