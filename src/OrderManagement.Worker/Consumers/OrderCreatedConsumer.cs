@@ -2,6 +2,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Contracts.Orders;
 using OrderManagement.Domain.Orders;
+using OrderManagement.Infrastructure.Observability;
 using OrderManagement.Infrastructure.Persistence;
 using OrderManagement.Worker.Allocation;
 
@@ -19,6 +20,7 @@ public sealed partial class OrderCreatedConsumer(
     AppDbContext db,
     IStockAllocator allocator,
     TimeProvider clock,
+    OrderMetrics metrics,
     ILogger<OrderCreatedConsumer> logger) : IConsumer<OrderCreated>
 {
     public async Task Consume(ConsumeContext<OrderCreated> context)
@@ -52,9 +54,11 @@ public sealed partial class OrderCreatedConsumer(
         }
 
         await db.SaveChangesAsync(ct);
+        metrics.OrderAllocated();
 
         if (order.Status == OrderStatus.Fulfilled)
         {
+            metrics.OrderFulfilled("worker");
             LogFulfilled(logger, order.Id);
         }
         else

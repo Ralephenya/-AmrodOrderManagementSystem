@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderManagement.Contracts;
+using OrderManagement.Infrastructure.Observability;
 using OrderManagement.Infrastructure.Persistence;
+using OrderManagement.Infrastructure.Reports;
 
 namespace OrderManagement.Infrastructure;
 
@@ -24,6 +27,13 @@ public static class DependencyInjection
 
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(maxRetryCount: 5));
         });
+
+        services.AddScoped<IOrderReportQueries, OrderReportQueries>();
+
+        services.AddSingleton<OrderMetrics>(); // IMeterFactory is registered by the .NET 8 host builders
+
+        // Readiness only: a liveness probe must not depend on the database, or a DB outage would restart every pod.
+        services.AddHealthChecks().AddCheck<SqlDatabaseHealthCheck>("sql", tags: [HealthTags.Ready], timeout: TimeSpan.FromSeconds(5));
 
         return services;
     }

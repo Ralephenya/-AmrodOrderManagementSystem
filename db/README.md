@@ -13,6 +13,7 @@ The schema is owned by EF Core code-first migrations in
 | `AddOrderAllocatedAt` | `Orders.AllocatedAt datetime2 NULL`, set by the worker | additive, optional |
 | `AddIdempotencyKeys` | `IdempotencyKeys` (PK ClientId + Key, request hash, stored outcome, `IX_IdempotencyKeys_ExpiresAt`) | additive, new table |
 | `AddMessagingOutbox` | MassTransit `OutboxMessage`, `OutboxState` (transactional outbox) and `InboxState` (consumer de-duplication) | additive, new tables |
+| `AddCustomerCountryCodeIndex` | `IX_Customers_CountryCode` INCLUDE (Name), for the top-spenders report (create `ONLINE = ON` on a large production table) | additive, index |
 
 ## Commands
 
@@ -31,7 +32,7 @@ EF="dotnet ef --project src/OrderManagement.Infrastructure --startup-project src
 | Roll back everything | `$EF database update 0` |
 | Remove the last, *unapplied* migration | `$EF migrations remove` |
 | Idempotent deploy script | `$EF migrations script --idempotent -o db/scripts/migrate-idempotent.sql` |
-| Rollback script (from → to) | `$EF migrations script AddMessagingOutbox AddIdempotencyKeys -o db/scripts/rollback-AddMessagingOutbox.sql` |
+| Rollback script (from → to) | `$EF migrations script AddCustomerCountryCodeIndex AddMessagingOutbox -o db/scripts/rollback-AddCustomerCountryCodeIndex.sql` |
 | Migration bundle (for containers/CD) | `$EF migrations bundle --self-contained -r linux-x64 -o efbundle` |
 
 The design-time factory targets LocalDB by default. To point the tools somewhere else, set
@@ -46,7 +47,7 @@ rolled back and run with elevated rights that the app itself doesn't hold.
 
 - [`scripts/migrate-idempotent.sql`](scripts/migrate-idempotent.sql): every migration, guarded by
   `__EFMigrationsHistory` checks, so it is safe to run against a database at any version.
-- [`scripts/rollback-AddMessagingOutbox.sql`](scripts/rollback-AddMessagingOutbox.sql): down-script for the latest migration (back to `AddIdempotencyKeys`). Roll back one migration at a time, newest first.
+- [`scripts/rollback-AddCustomerCountryCodeIndex.sql`](scripts/rollback-AddCustomerCountryCodeIndex.sql): down-script for the latest migration (back to `AddMessagingOutbox`). Roll back one migration at a time, newest first.
 
 Apply them with `sqlcmd -I` (or SSMS / Azure Data Studio, which default to it). `-I` turns on
 `QUOTED_IDENTIFIER`, which SQL Server requires for the filtered indexes in the MassTransit outbox tables. Plain

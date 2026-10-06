@@ -29,6 +29,8 @@ public sealed class WorkerHarness : IAsyncDisposable
 
     public ITestHarness Harness { get; }
 
+    public IServiceProvider Services => _provider;
+
     public CountingAllocator Allocator { get; }
 
     public static async Task<WorkerHarness> StartAsync(SqlServerDatabase database)
@@ -49,6 +51,7 @@ public sealed class WorkerHarness : IAsyncDisposable
         var allocator = new CountingAllocator();
         var services = new ServiceCollection()
             .AddLogging()
+            .AddMetrics()
             .AddSingleton<IConfiguration>(configuration);
         services.AddWorker(configuration);
         services.Replace(ServiceDescriptor.Singleton<IStockAllocator>(allocator));

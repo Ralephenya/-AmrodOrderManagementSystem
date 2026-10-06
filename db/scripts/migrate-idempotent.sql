@@ -307,6 +307,23 @@ BEGIN
     VALUES (N'20261005191701_AddMessagingOutbox', N'9.0.20');
 END;
 
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261006042903_AddCustomerCountryCodeIndex'
+)
+BEGIN
+    CREATE INDEX [IX_Customers_CountryCode] ON [Customers] ([CountryCode]) INCLUDE ([Name]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261006042903_AddCustomerCountryCodeIndex'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261006042903_AddCustomerCountryCodeIndex', N'9.0.20');
+END;
+
 COMMIT;
 GO
 

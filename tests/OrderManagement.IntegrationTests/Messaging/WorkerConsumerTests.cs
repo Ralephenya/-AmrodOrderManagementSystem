@@ -1,4 +1,7 @@
 using MassTransit;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
+using OrderManagement.Infrastructure.Observability;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Contracts.Orders;
 using OrderManagement.Domain.Orders;
@@ -30,13 +33,18 @@ public sealed class WorkerConsumerTests(IntegrationTestFixture fixture) : IAsync
     }
 
     [Fact]
-    public async Task OrderCreated_ForAnAlreadyPaidOrder_AllocatesAndFulfils()
+    public async Task OrderCreated_ForAnAlreadyPaidOrder_AllocatesAndFulfils_AndCountsBoth()
     {
+        var meters = _worker.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>();
+        using var allocated = new MetricCollector<long>(meters, OrderMetrics.MeterName, "orders.allocated");
+        using var fulfilled = new MetricCollector<long>(meters, OrderMetrics.MeterName, "orders.fulfilled");
         var order = await SeedOrderAsync(OrderStatus.Paid);
 
         await _worker.Publish(Created(order));
 
         (await EventuallyAsync(order.Id, o => o.Status == OrderStatus.Fulfilled)).AllocatedAt.ShouldNotBeNull();
+        allocated.GetMeasurementSnapshot().Sum(m => m.Value).ShouldBe(1);
+        fulfilled.GetMeasurementSnapshot().Single().Tags["source"].ShouldBe("worker");
     }
 
     [Fact]

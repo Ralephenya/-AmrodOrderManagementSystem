@@ -27,7 +27,7 @@ public class OrderStatusRaceTests(IntegrationTestFixture fixture)
         var interceptor = new BeforeSave(async () =>
         {
             await using var other = fixture.CreateDbContext();
-            var result = await new OrderService(other, TimeProvider.System, new RecordingOrderEventPublisher())
+            var result = await new OrderService(other, TimeProvider.System, new RecordingOrderEventPublisher(), TestMetrics.Create())
                 .ChangeStatusAsync(orderId, OrderStatus.Paid, null, request, CancellationToken.None);
             result.Outcome.IsError.ShouldBeFalse();
         });
@@ -73,7 +73,7 @@ public class OrderStatusRaceTests(IntegrationTestFixture fixture)
 
         await using (var db = fixture.CreateDbContext())
         {
-            (await new OrderService(db, clock, new RecordingOrderEventPublisher()).ChangeStatusAsync(orderId, OrderStatus.Paid, null, request, CancellationToken.None))
+            (await new OrderService(db, clock, new RecordingOrderEventPublisher(), TestMetrics.Create()).ChangeStatusAsync(orderId, OrderStatus.Paid, null, request, CancellationToken.None))
                 .Outcome.IsError.ShouldBeFalse();
         }
 
@@ -81,7 +81,7 @@ public class OrderStatusRaceTests(IntegrationTestFixture fixture)
 
         await using (var db = fixture.CreateDbContext())
         {
-            var again = await new OrderService(db, clock, new RecordingOrderEventPublisher()).ChangeStatusAsync(orderId, OrderStatus.Paid, null, request, CancellationToken.None);
+            var again = await new OrderService(db, clock, new RecordingOrderEventPublisher(), TestMetrics.Create()).ChangeStatusAsync(orderId, OrderStatus.Paid, null, request, CancellationToken.None);
 
             again.Replayed.ShouldBeFalse();
             again.Outcome.FirstError.Code.ShouldBe("Order.AlreadyInStatus");
@@ -94,7 +94,7 @@ public class OrderStatusRaceTests(IntegrationTestFixture fixture)
             .AddInterceptors(interceptor)
             .Options),
         TimeProvider.System,
-        new RecordingOrderEventPublisher());
+        new RecordingOrderEventPublisher(), TestMetrics.Create());
 
     private async Task<Guid> SeedPendingOrderAsync()
     {

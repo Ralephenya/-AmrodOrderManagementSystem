@@ -23,5 +23,8 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         // Supports prefix search (Name LIKE 'abc%') and ORDER BY Name on the customer list.
         builder.HasIndex(c => c.Name);
+
+        // Reports rank customers by country (e.g. every customer who can pay in ZAR). INCLUDE (Name) covers that read.
+        builder.HasIndex(c => c.CountryCode).IncludeProperties(c => c.Name);
     }
 }

@@ -30,6 +30,12 @@
     <!-- 9.x on purpose: 10.x moves to Microsoft.OpenApi 2.0, which brings breaking API changes and no benefit here -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
+  <ItemGroup Label="Observability">
+    <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Reports">
+    <PackageVersion Include="Dapper" Version="2.1.89" />
+  </ItemGroup>
   <ItemGroup Label="Messaging">
     <!-- Pinned to 8.x: Apache-2.0. MassTransit 9+ requires a commercial licence. -->
     <PackageVersion Include="MassTransit" Version="8.5.11" />
@@ -45,6 +51,7 @@
   <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="10.1.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.31" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="10.10.0" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
