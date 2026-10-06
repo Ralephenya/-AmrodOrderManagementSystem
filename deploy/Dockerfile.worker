@@ -14,8 +14,9 @@ RUN dotnet restore src/OrderManagement.Worker/OrderManagement.Worker.csproj
 COPY src/ src/
 RUN dotnet publish src/OrderManagement.Worker/OrderManagement.Worker.csproj -c Release --no-restore -o /app /p:UseAppHost=false
 
-# A generic host with no HTTP endpoint, so the plain runtime image (no ASP.NET Core) is enough.
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+# The worker serves no HTTP, but ServiceDefaults (health checks, OpenTelemetry) references the ASP.NET Core shared
+# framework, so it needs the aspnet runtime, not the plain one.
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
 USER $APP_UID
