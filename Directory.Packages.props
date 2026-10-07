@@ -46,8 +46,8 @@
     <PackageVersion Include="MassTransit" Version="8.5.11" />
     <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="8.5.11" />
     <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.11" />
-    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.6.0" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.6.0" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.6.1" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.6.1" />
   </ItemGroup>
   <ItemGroup Label="Persistence">
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20" />

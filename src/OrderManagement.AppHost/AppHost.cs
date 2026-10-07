@@ -6,7 +6,20 @@ var ordersDb = builder.AddConnectionString("OrdersDb");
 
 var api = builder.AddProject<Projects.OrderManagement_Api>("api")
     .WithReference(ordersDb)
-    .WithHttpHealthCheck("/readiness"); // database and broker reachable
+    .WithHttpHealthCheck("/readiness") // database and broker reachable
+    .WithUrls(context =>
+    {
+        // Link the API docs from the dashboard instead of the bare endpoints (which have no page at "/").
+        var https = context.Urls.FirstOrDefault(u => u.Endpoint?.EndpointName == "https");
+        if (https is null)
+        {
+            return;
+        }
+
+        context.Urls.Clear();
+        context.Urls.Add(new() { Url = $"{https.Url}/scalar", DisplayText = "Scalar" });
+        context.Urls.Add(new() { Url = $"{https.Url}/swagger", DisplayText = "Swagger" });
+    });
 
 // The API applies migrations on startup in Development, so the worker waits until the API is healthy.
 var worker = builder.AddProject<Projects.OrderManagement_Worker>("worker")
