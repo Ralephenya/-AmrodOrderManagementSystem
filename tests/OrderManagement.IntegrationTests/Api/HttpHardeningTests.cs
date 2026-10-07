@@ -1,7 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using OrderManagement.Api.Auth;
 using OrderManagement.IntegrationTests.Fixtures;
 
 namespace OrderManagement.IntegrationTests.Api;
@@ -100,6 +104,43 @@ public class HttpHardeningTests(IntegrationTestFixture fixture)
 
         await third.ShouldBeProblemAsync(HttpStatusCode.TooManyRequests, "rate_limited");
         third.Headers.RetryAfter.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task GlobalRateLimit_CoversReadsAndGraphQL_PerUser()
+    {
+        using var limited = fixture.Factory.WithWebHostBuilder(b => b.UseSetting("RateLimiting:RequestsPerMinute", "2"));
+        var steve = ClientAs(limited, "Rate Limit Steve");
+
+        (await steve.GetAsync(Countries)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await steve.PostAsJsonAsync("/graphql", new { query = "{ __typename }" })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var third = await steve.GetAsync(Countries);
+
+        await third.ShouldBeProblemAsync(HttpStatusCode.TooManyRequests, "rate_limited");
+        third.Headers.RetryAfter.ShouldNotBeNull();
+
+        // Another user has a budget of their own.
+        (await ClientAs(limited, "Rate Limit Thandi").GetAsync(Countries)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GlobalRateLimit_NeverAppliesToHealthProbes()
+    {
+        using var limited = fixture.Factory.WithWebHostBuilder(b => b.UseSetting("RateLimiting:RequestsPerMinute", "1"));
+        var client = limited.CreateClient();
+
+        for (var i = 0; i < 3; i++)
+        {
+            (await client.GetAsync("/healthz")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        }
+    }
+
+    private static HttpClient ClientAs(WebApplicationFactory<Program> factory, string userName)
+    {
+        var client = factory.CreateClient();
+        var token = factory.Services.GetRequiredService<MockTokenIssuer>().Issue(userName, ["Orders.Read"]);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
     }
 
     private static HttpRequestMessage Preflight(string origin)

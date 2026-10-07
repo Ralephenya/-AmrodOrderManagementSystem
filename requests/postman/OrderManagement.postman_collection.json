@@ -1,0 +1,202 @@
+{
+  "info": {
+    "name": "Amrod Order Management",
+    "description": "The order journey against a running API, in order: token → customer → order → status changes → reports.\n\nImport this collection and one of the environments in this folder (local API on 5050, or Docker Compose on 5000), then run it top to bottom, or use the Collection Runner. Each request saves what the next one needs (token, IDs, ETag) and checks the response.\n\nSigning in uses the mock Entra endpoint, which exists only in Development and Testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1. Get a development token",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/dev/token",
+        "body": { "mode": "raw", "raw": "{ \"name\": \"Postman\", \"roles\": [\"Orders.Admin\"] }" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 with a token', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('accessToken', pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. List SADC countries and their currencies",
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reference/countries" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('16 SADC countries', () => pm.expect(pm.response.json()).to.have.lengthOf(16));",
+              "const na = pm.response.json().find(c => c.code === 'NA');",
+              "pm.test('Namibia (CMA) may order in NAD or ZAR', () => pm.expect(na.currencies.map(c => c.code)).to.eql(['NAD', 'ZAR']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Create a customer (Namibia)",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["pm.collectionVariables.set('email', `postman.${Date.now()}@example.na`);"] } },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created with a Location', () => { pm.response.to.have.status(201); pm.response.to.have.header('Location'); });",
+              "pm.collectionVariables.set('customerId', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/customers",
+        "body": { "mode": "raw", "raw": "{ \"name\": \"Etosha Traders\", \"email\": \"{{email}}\", \"countryCode\": \"NA\" }" }
+      }
+    },
+    {
+      "name": "4. Create an order (server computes the total)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const order = pm.response.json();",
+              "pm.test('total = 3 × 19.99 + 2 × 85.50 = 230.97', () => pm.expect(order.totalAmount).to.eql(230.97));",
+              "pm.test('starts Pending', () => pm.expect(order.status).to.eql('Pending'));",
+              "pm.collectionVariables.set('orderId', order.id);",
+              "pm.collectionVariables.set('etag', pm.response.headers.get('ETag'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"currencyCode\": \"ZAR\",\n  \"lineItems\": [\n    { \"productSku\": \"PEN-001\", \"quantity\": 3, \"unitPrice\": 19.99 },\n    { \"productSku\": \"MUG-002\", \"quantity\": 2, \"unitPrice\": 85.50 }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Conditional GET: 304 while unchanged",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('304 Not Modified', () => pm.response.to.have.status(304));"] } }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "If-None-Match", "value": "{{etag}}" }],
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}"
+      }
+    },
+    {
+      "name": "6. Pay it (idempotent: send twice, the second is replayed)",
+      "event": [
+        { "listen": "prerequest", "script": { "exec": ["if (!pm.collectionVariables.get('payKey')) pm.collectionVariables.set('payKey', pm.variables.replaceIn('{{$guid}}'));"] } },
+        { "listen": "test", "script": { "exec": ["pm.test('200, now Paid', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('Paid'); });"] } }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{payKey}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status",
+        "body": { "mode": "raw", "raw": "{ \"status\": \"Paid\" }" }
+      }
+    },
+    {
+      "name": "7. Same key, different change: 422",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('422 idempotency key reused', () => pm.response.to.have.status(422));",
+              "pm.collectionVariables.unset('payKey');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{payKey}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status",
+        "body": { "mode": "raw", "raw": "{ \"status\": \"Cancelled\" }" }
+      }
+    },
+    {
+      "name": "8. Stale If-Match (the creation ETag): 412",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('412 Precondition Failed', () => pm.response.to.have.status(412));"] } }],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{$guid}}" },
+          { "key": "If-Match", "value": "{{etag}}" }
+        ],
+        "url": "{{baseUrl}}/api/v1/orders/{{orderId}}/status",
+        "body": { "mode": "raw", "raw": "{ \"status\": \"Cancelled\" }" }
+      }
+    },
+    {
+      "name": "9. Currency not allowed for the country: 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('400 with a friendly message on currencyCode', () => { pm.response.to.have.status(400); pm.expect(pm.response.json().errors.currencyCode[0]).to.match(/can only order in/); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/v1/orders",
+        "body": { "mode": "raw", "raw": "{ \"customerId\": \"{{customerId}}\", \"currencyCode\": \"BWP\", \"lineItems\": [ { \"productSku\": \"PEN-001\", \"quantity\": 1, \"unitPrice\": 10 } ] }" }
+      }
+    },
+    {
+      "name": "10. List this customer's orders",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('one order', () => pm.expect(pm.response.json().totalCount).to.eql(1));"] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/orders?customerId={{customerId}}&sort=-total&page=1&pageSize=20" }
+    },
+    {
+      "name": "11. Top spenders in ZAR (Orders.Admin)",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('200, in ZAR', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().currencyCode).to.eql('ZAR'); });"] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/top-spenders?currency=ZAR&days=90&top=10" }
+    },
+    {
+      "name": "12. Running totals for the customer",
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }],
+      "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reports/customers/{{customerId}}/running-totals?currency=ZAR" }
+    }
+  ],
+  "variable": [
+    { "key": "accessToken", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "etag", "value": "" },
+    { "key": "email", "value": "" },
+    { "key": "payKey", "value": "" }
+  ]
+}

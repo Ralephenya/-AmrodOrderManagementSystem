@@ -1,0 +1,43 @@
+# Reports API (Dapper, hand-written SQL): VS Code with the "REST Client" extension (humao.rest-client), which supports the request chaining used here
+# Start the stack first (Aspire AppHost or `dotnet run --project src/OrderManagement.Api`). Reports need Orders.Admin.
+# Run orders.http first if the database is empty: only Paid and Fulfilled orders count as spend.
+
+@baseUrl = http://localhost:5050
+
+### 1. Development token with the admin role
+# @name token
+POST {{baseUrl}}/api/v1/dev/token
+Content-Type: application/json
+
+{ "name": "Steve", "roles": ["Orders.Admin"] }
+
+###
+@accessToken = {{token.response.body.accessToken}}
+
+### 2. Top spenders in ZAR over the last 90 days. Customers in every country that may order in ZAR are ranked
+###    (South Africa and the CMA countries), and those with no qualifying orders appear with 0.
+# @name topSpenders
+GET {{baseUrl}}/api/v1/reports/top-spenders?currency=ZAR&days=90&top=10
+Authorization: Bearer {{accessToken}}
+
+###
+@customerId = {{topSpenders.response.body.customers[0].customerId}}
+
+### 3. Running total of the top customer's ZAR spend, order by order (SUM() OVER (... ROWS ...))
+GET {{baseUrl}}/api/v1/reports/customers/{{customerId}}/running-totals?currency=ZAR
+Authorization: Bearer {{accessToken}}
+
+### 4. A currency outside SADC: 400 with a friendly message on currency
+GET {{baseUrl}}/api/v1/reports/top-spenders?currency=EUR
+Authorization: Bearer {{accessToken}}
+
+### 5. Without the admin role: 403
+# @name readToken
+POST {{baseUrl}}/api/v1/dev/token
+Content-Type: application/json
+
+{ "name": "Reader", "roles": ["Orders.Read"] }
+
+###
+GET {{baseUrl}}/api/v1/reports/top-spenders?currency=ZAR
+Authorization: Bearer {{readToken.response.body.accessToken}}
