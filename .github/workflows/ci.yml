@@ -21,16 +21,16 @@ env:
 jobs:
   api:
     name: API · build and test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
           # The services target net8.0, so the tests need the 8.0 runtime next to the SDK global.json pins.
           dotnet-version: 8.0.x
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
@@ -44,7 +44,7 @@ jobs:
         run: dotnet test tests/OrderManagement.IntegrationTests -c Release --no-build --logger "trx;LogFileName=integration.trx"
         env:
           ORDERS_TEST_SQL: container
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -52,7 +52,7 @@ jobs:
 
   migrations:
     name: Database · migration scripts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       mssql:
@@ -67,8 +67,8 @@ jobs:
     env:
       SQLCMD: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Ci_only_P4ssw0rd! -b -I
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
           dotnet-version: 8.0.x
@@ -102,14 +102,14 @@ jobs:
 
   web:
     name: Web · lint, typecheck, test, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -127,14 +127,14 @@ jobs:
 
   e2e:
     name: End-to-end · Playwright against docker compose
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [api, web]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Start the stack
         run: docker compose -f deploy/docker-compose.yml up --build --detach --wait --wait-timeout 300
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -148,7 +148,7 @@ jobs:
         working-directory: web
         env:
           E2E_BASE_URL: http://localhost:8080
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -164,7 +164,7 @@ jobs:
 
   images:
     name: Images · build and publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [api, migrations, web, e2e]
     # Pull requests only build the images (in e2e); pushes to the main branch publish them.
@@ -177,22 +177,22 @@ jobs:
       matrix:
         image: [api, worker, migrations, web]
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           # GHCR names must be lower case; the repository name is lower-cased here.
           images: ghcr.io/${{ github.repository_owner }}/order-management-${{ matrix.image }}
           tags: |
             type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/Dockerfile.${{ matrix.image }}
