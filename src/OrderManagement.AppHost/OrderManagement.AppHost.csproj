@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.1">
 
   <!-- The AppHost is dev-time orchestration only, so it runs on .NET 10 (required by Aspire 13).
        Every service it launches targets net8.0, per the brief. -->
