@@ -73,6 +73,11 @@ dotnet run --project src/OrderManagement.AppHost
 | App | http://localhost:5173 |
 | API | https://localhost:7140 (`/swagger`, `/scalar/v1`) |
 
+Before the first run, make sure Docker Desktop is running and `node -v` shows 24 or later. You don't need to run
+`npm install` yourself: the `web-installer` step does it each time the AppHost starts. If `web` shows *Finished*
+in the dashboard, its packages were probably installed with an older Node. Delete `web/node_modules` and start
+the AppHost again.
+
 The API applies migrations to LocalDB on start-up in Development. **No Docker?** Run the AppHost with
 `--Messaging:Transport InMemory`: the API works and writes events to the outbox, but no worker receives them, so
 orders aren't allocated or fulfilled.

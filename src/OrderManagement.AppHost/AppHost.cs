@@ -17,7 +17,7 @@ var api = builder.AddProject<Projects.OrderManagement_Api>("api")
         }
 
         context.Urls.Clear();
-        context.Urls.Add(new() { Url = $"{https.Url}/scalar", DisplayText = "Scalar" });
+        context.Urls.Add(new() { Url = $"{https.Url}/scalar/v1", DisplayText = "Scalar" });
         context.Urls.Add(new() { Url = $"{https.Url}/swagger", DisplayText = "Swagger" });
     });
 
