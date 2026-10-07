@@ -27,7 +27,8 @@ public sealed class ApiFactory(SqlServerDatabase database) : WebApplicationFacto
         builder.UseSetting("Auth:Mock:SigningKey", "integration-tests-signing-key-0123456789abcdef");
         builder.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
 
-        // Every test shares one mock user, so the per-user write limit is raised; HttpHardeningTests lowers it again.
+        // Every test shares one mock user, so the per-user limits are raised; HttpHardeningTests lowers them again.
+        builder.UseSetting("RateLimiting:RequestsPerMinute", "100000");
         builder.UseSetting("RateLimiting:WritesPerMinute", "100000");
 
         // No broker in tests: the production messaging registration (including the EF bus outbox) runs on the in-memory

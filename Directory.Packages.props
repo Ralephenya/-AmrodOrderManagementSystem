@@ -30,6 +30,11 @@
     <!-- 9.x on purpose: 10.x moves to Microsoft.OpenApi 2.0, which brings breaking API changes and no benefit here -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
+  <ItemGroup Label="GraphQL">
+    <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.7" />
+    <PackageVersion Include="HotChocolate.AspNetCore.Authorization" Version="16.6.7" />
+    <PackageVersion Include="HotChocolate.Data.EntityFramework" Version="16.6.7" />
+  </ItemGroup>
   <ItemGroup Label="Observability">
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
   </ItemGroup>

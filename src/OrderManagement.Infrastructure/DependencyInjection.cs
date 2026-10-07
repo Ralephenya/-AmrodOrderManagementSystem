@@ -17,16 +17,10 @@ public static class DependencyInjection
     {
         services.AddSingleton(TimeProvider.System);
 
-        // The connection string is resolved when the context is first created, not at registration time,
-        // so hosts and test factories can supply it through any configuration source.
-        services.AddDbContext<AppDbContext>((sp, options) =>
-        {
-            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)
-                ?? throw new InvalidOperationException(
-                    $"Connection string '{ConnectionStringName}' is missing. See docs/ONBOARDING.md.");
-
-            options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(maxRetryCount: 5));
-        });
+        // One registration for both uses: a factory for code that needs a context of its own (GraphQL runs resolvers in
+        // parallel, and a DbContext is not thread-safe), which also registers AppDbContext itself as a scoped service
+        // for everything else (services, MassTransit's outbox, consumers). Scoped, so a context is per request as before.
+        services.AddDbContextFactory<AppDbContext>(ConfigureDbContext, ServiceLifetime.Scoped);
 
         services.AddScoped<IOrderReportQueries, OrderReportQueries>();
 
@@ -36,5 +30,18 @@ public static class DependencyInjection
         services.AddHealthChecks().AddCheck<SqlDatabaseHealthCheck>("sql", tags: [HealthTags.Ready], timeout: TimeSpan.FromSeconds(5));
 
         return services;
+    }
+
+    /// <summary>
+    /// The connection string is resolved when a context is first created, not at registration time, so hosts and test
+    /// factories can supply it through any configuration source.
+    /// </summary>
+    private static void ConfigureDbContext(IServiceProvider sp, DbContextOptionsBuilder options)
+    {
+        var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString(ConnectionStringName)
+            ?? throw new InvalidOperationException(
+                $"Connection string '{ConnectionStringName}' is missing. See docs/ONBOARDING.md.");
+
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(maxRetryCount: 5));
     }
 }

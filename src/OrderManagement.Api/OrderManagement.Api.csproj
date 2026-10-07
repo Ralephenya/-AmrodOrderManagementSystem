@@ -13,6 +13,9 @@
     <PackageReference Include="Asp.Versioning.Mvc" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="HotChocolate.AspNetCore" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" />
+    <PackageReference Include="HotChocolate.Data.EntityFramework" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.Identity.Web" />
@@ -24,5 +27,12 @@
     <InternalsVisibleTo Include="OrderManagement.UnitTests" />
     <InternalsVisibleTo Include="OrderManagement.IntegrationTests" />
   </ItemGroup>
+
+
+  <!-- Hot Chocolate adds global usings by default. HotChocolate.Error would collide with ErrorOr.Error across the
+       API, so they are off and the GraphQL code imports what it needs explicitly. -->
+  <PropertyGroup>
+    <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
+  </PropertyGroup>
 
 </Project>

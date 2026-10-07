@@ -1,4 +1,4 @@
-# Orders API: VS Code "REST Client" / JetBrains HTTP Client / Visual Studio .http
+# Orders API: VS Code with the "REST Client" extension (humao.rest-client), which supports the request chaining used here
 # Start the stack first (Aspire AppHost or `dotnet run --project src/OrderManagement.Api`).
 
 @baseUrl = http://localhost:5050

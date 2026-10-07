@@ -1,0 +1,76 @@
+# GraphQL (read-only): VS Code with the "REST Client" extension (humao.rest-client), which supports the request chaining used here
+# Start the API first. In Development, open http://localhost:5050/graphql in a browser for the Nitro IDE (schema,
+# autocomplete, docs). Every field needs Orders.Read; there are no mutations: writes go through the REST API.
+
+@baseUrl = http://localhost:5050
+
+### 1. Token
+# @name token
+POST {{baseUrl}}/api/v1/dev/token
+Content-Type: application/json
+
+{ "name": "Steve", "roles": ["Orders.Write"] }
+
+###
+@accessToken = {{token.response.body.accessToken}}
+
+### 2. A customer with a couple of orders to query (run once)
+# @name customer
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "name": "Gaborone Office Supplies", "email": "orders.{{$randomInt 1000 999999}}@gaborone.example.bw", "countryCode": "BW" }
+
+###
+@customerId = {{customer.response.body.id}}
+
+###
+POST {{baseUrl}}/api/v1/orders
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "customerId": "{{customerId}}", "currencyCode": "BWP", "lineItems": [ { "productSku": "PEN-01", "quantity": 10, "unitPrice": 2.50 }, { "productSku": "MUG-02", "quantity": 2, "unitPrice": 45 } ] }
+
+###
+POST {{baseUrl}}/api/v1/orders
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{ "customerId": "{{customerId}}", "currencyCode": "BWP", "lineItems": [ { "productSku": "BAG-04", "quantity": 3, "unitPrice": 150 } ] }
+
+### 3. The customer's orders with nested line items, newest first. One SQL query, whatever the page size.
+POST {{baseUrl}}/graphql
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "query": "query ($customerId: UUID!) { ordersByCustomer(customerId: $customerId, first: 10) { totalCount pageInfo { hasNextPage endCursor } nodes { id status currencyCode totalAmount createdAt lineItems { productSku quantity unitPrice lineTotal } } } }",
+  "variables": { "customerId": "{{customerId}}" }
+}
+
+### 4. Filters and sorting: Pending orders over 100, biggest first, with only the fields asked for
+POST {{baseUrl}}/graphql
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "query": "query ($customerId: UUID!) { ordersByCustomer(customerId: $customerId, where: { status: { eq: PENDING }, totalAmount: { gt: 100 } }, order: [{ totalAmount: DESC }]) { nodes { id totalAmount lineItems { productSku } } } }",
+  "variables": { "customerId": "{{customerId}}" }
+}
+
+### 5. Orders that contain a given SKU (filtering on the nested list)
+POST {{baseUrl}}/graphql
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "query": "query ($customerId: UUID!) { ordersByCustomer(customerId: $customerId, where: { lineItems: { some: { productSku: { eq: \"BAG-04\" } } } }) { nodes { id totalAmount } } }",
+  "variables": { "customerId": "{{customerId}}" }
+}
+
+### 6. Without a token: an AUTH_NOT_AUTHENTICATED error and no data
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+
+{ "query": "{ ordersByCustomer(customerId: \"00000000-0000-0000-0000-000000000000\") { totalCount } }" }
